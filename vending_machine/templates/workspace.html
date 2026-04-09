@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能售卖机 - 工作界面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            background-color: #1a1a2e;
+            color: white;
+        }
+        .camera-feed {
+            background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        .camera-feed video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .detection-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        /* 扫描线效果 */
+        .scanning-line {
+            position: absolute;
+            top: -10%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff88, transparent);
+            animation: scan 2s linear infinite;
+            z-index: 999;
+        }
+        
+        @keyframes scan {
+            0% {
+                top: -10%;
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                top: 110%;
+                opacity: 0;
+            }
+        }
+        
+        /* 识别成功效果 */
+        .recognition-success {
+            animation: success-pulse 0.5s ease-out;
+        }
+        
+        @keyframes success-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 20px rgba(0, 255, 136, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 255, 136, 0);
+            }
+        }
+        
+        /* 检测框增强 */
+        .detection-box {
+            position: absolute;
+            border: 2px solid #00ff88;
+            background-color: rgba(0, 255, 136, 0.1);
+            transition: all 0.3s ease;
+            animation: detection-pulse 1.5s infinite, detection-slide 0.5s ease-out;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            border-radius: 4px;
+        }
+        
+        @keyframes detection-slide {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        /* 检测标签增强 */
+        .detection-label {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            background-color: #00ff88;
+            color: #000;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+            white-space: nowrap;
+            animation: label-slide 0.5s ease-out;
+            box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+        }
+        .detection-box.unknown {
+            border-color: #ff4757;
+            background-color: rgba(255, 71, 87, 0.1);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.5);
+            animation: detection-pulse 1.5s infinite, detection-slide 0.5s ease-out;
+        }
+        .detection-label.unknown {
+            background-color: #ff4757;
+            color: white;
+        }
+        @keyframes detection-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 30px rgba(0, 255, 136, 0.8);
+                transform: scale(1.02);
+            }
+        }
+        @keyframes label-slide {
+            0% { 
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .detection-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+        .detection-status.scanning {
+            color: #00ff88;
+            animation: scanning-pulse 1s infinite;
+        }
+        @keyframes scanning-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        .status-indicator.running {
+            background-color: #00ff88;
+        }
+        .status-indicator.stopped {
+            background-color: #ff4757;
+            animation: none;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .card-dark {
+            background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #00ff88 0%, #00ccff 100%);
+            border: none;
+            color: #000;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 255, 136, 0.3);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%);
+            border: none;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 71, 87, 0.3);
+        }
+        .product-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        .product-item:hover {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88 0%, #00ccff 100%);
+            transition: width 0.3s ease;
+        }
+        .payment-method {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .payment-method:hover {
+            border-color: #00ff88;
+        }
+        .payment-method.selected {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="max-w-7xl mx-auto">
+        <!-- 顶部标题栏 -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold mb-2 flex items-center">
+                <i class="fa fa-camera-retro mr-3 text-00ff88"></i>
+                智能售卖机 - 工作界面
+            </h1>
+            <p class="text-gray-400">实时监控商品识别与支付流程</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧：摄像头和识别区域 -->
+            <div class="lg:col-span-2">
+                <!-- 摄像头画面 -->
+                <div class="camera-feed mb-6">
+                    <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                        <h3 class="font-semibold">摄像头实时画面</h3>
+                        <span class="text-sm">
+                            <span class="status-indicator stopped"></span>
+                            已停止
+                        </span>
+                    </div>
+                    <div class="relative">
+                        <video id="camera-stream" autoplay muted playsinline class="w-full"></video>
+                        <div id="detection-overlay" class="detection-overlay">
+                            <!-- 扫描线会动态添加 -->
+                        </div>
+                        
+                        <!-- 识别状态提示 -->
+                        <div class="absolute bottom-4 left-4 bg-black bg-opacity-70 px-4 py-2 rounded-lg">
+                            <div class="text-sm text-gray-300">识别状态:</div>
+                            <div class="text-lg font-bold text-00ff88" id="recognition-status">等待商品...</div>
+                        </div>
+                        
+                        <!-- 实时检测状态 -->
+                        <div id="detection-status" class="detection-status">
+                            准备就绪
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 识别控制 -->
+                <div class="card-dark p-6 mb-6">
+                    <h3 class="font-semibold mb-4">识别控制</h3>
+                    <div class="flex flex-wrap gap-3">
+                        <button id="start-recognition-btn" class="btn-primary px-6 py-3 rounded-lg flex items-center">
+                            <i class="fa fa-play mr-2"></i>
+                            开始识别
+                        </button>
+                        <button id="stop-recognition-btn" class="btn-danger px-6 py-3 rounded-lg flex items-center">
+                            <i class="fa fa-stop mr-2"></i>
+                            停止识别
+                        </button>
+                        <button id="capture-btn" class="btn-primary px-6 py-3 rounded-lg flex items-center">
+                            <i class="fa fa-camera mr-2"></i>
+                            抓拍识别
+                        </button>
+                        <button id="reset-btn" class="btn-danger px-6 py-3 rounded-lg flex items-center">
+                            <i class="fa fa-refresh mr-2"></i>
+                            重置
+                        </button>
+                        <button id="test-mode-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg flex items-center">
+                            <i class="fa fa-flask mr-2"></i>
+                            测试模式
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 识别日志 -->
+                <div class="card-dark p-6">
+                    <h3 class="font-semibold mb-4">识别日志</h3>
+                    <div class="h-48 overflow-y-auto bg-black bg-opacity-30 rounded-lg p-4">
+                        <div id="recognition-log" class="space-y-2 text-sm">
+                            <div class="text-gray-400">系统已启动，等待识别...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：商品列表和支付 -->
+            <div>
+                <!-- 已识别商品 -->
+                <div class="card-dark p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-semibold">已识别商品</h3>
+                        <span class="text-sm text-gray-400">共 <span id="product-count">0</span> 件</span>
+                    </div>
+                    <div id="recognized-products" class="space-y-3">
+                        <div class="text-center py-8 text-gray-400">
+                            <i class="fa fa-shopping-cart text-4xl mb-2"></i>
+                            <p>暂无识别商品</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 订单信息 -->
+                <div class="card-dark p-6 mb-6">
+                    <h3 class="font-semibold mb-4">订单信息</h3>
+                    <div id="order-info">
+                        <div class="text-center py-8 text-gray-400">
+                            <i class="fa fa-file-text-o text-4xl mb-2"></i>
+                            <p>暂无订单</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 支付区域 -->
+                <div class="card-dark p-6">
+                    <h3 class="font-semibold mb-4">支付方式</h3>
+                    <div class="space-y-3 mb-6">
+                        <div class="payment-method selected" onclick="selectPaymentMethod('alipay')">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fa fa-alipay text-2xl text-blue-500 mr-3"></i>
+                                    <div>
+                                        <div class="font-medium">支付宝</div>
+                                        <div class="text-xs text-gray-400">推荐使用</div>
+                                    </div>
+                                </div>
+                                <i class="fa fa-check text-00ff88"></i>
+                            </div>
+                        </div>
+                        <div class="payment-method" onclick="selectPaymentMethod('wechat')">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fa fa-wechat text-2xl text-green-500 mr-3"></i>
+                                    <div>
+                                        <div class="font-medium">微信支付</div>
+                                        <div class="text-xs text-gray-400">推荐使用</div>
+                                    </div>
+                                </div>
+                                <i class="fa fa-check text-gray-600"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 支付按钮 -->
+                    <button id="pay-btn" class="btn-primary w-full py-3 rounded-lg text-lg font-bold flex items-center justify-center" disabled>
+                        <i class="fa fa-qrcode mr-2"></i>
+                        生成支付码
+                    </button>
+                    
+                    <!-- 支付二维码 -->
+                    <div id="payment-qr" class="mt-4 text-center" style="display: none;">
+                        <div class="bg-white p-4 rounded-lg inline-block">
+                            <div class="text-6xl mb-2">📱</div>
+                            <div class="text-sm text-black">请使用支付宝扫码支付</div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-400">剩余时间</span>
+                                <span class="text-00ff88 font-bold" id="payment-countdown">60秒</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="payment-progress" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        <button id="simulate-payment-btn" class="btn-primary w-full py-2 rounded-lg mt-4 flex items-center justify-center">
+                            <i class="fa fa-check mr-2"></i>
+                            模拟支付成功
+                        </button>
+                        <button id="cancel-payment-btn" class="btn-danger w-full py-2 rounded-lg mt-2 flex items-center justify-center">
+                            <i class="fa fa-times mr-2"></i>
+                            取消支付
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 支付状态 -->
+                <div class="card-dark p-6 mt-6">
+                    <h3 class="font-semibold mb-4">支付状态</h3>
+                    <div id="payment-status" class="text-center py-4">
+                        <div class="text-00ff88">
+                            <i class="fa fa-check-circle text-2xl mb-2"></i>
+                            <p>等待支付</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let recognitionActive = false;
+        let paymentTimer = null;
+        let selectedPaymentMethod = 'alipay';
+        let recognizedProducts = [];
+        let orderId = null;
+        let paymentId = null;
+        let actualProducts = []; // 实际商品数据
+        let cameraStream = null; // 摄像头流引用
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 绑定按钮事件
+            document.getElementById('start-recognition-btn').addEventListener('click', startRecognition);
+            document.getElementById('stop-recognition-btn').addEventListener('click', stopRecognition);
+            document.getElementById('capture-btn').addEventListener('click', captureRecognition);
+            document.getElementById('reset-btn').addEventListener('click', resetRecognition);
+            document.getElementById('cancel-payment-btn').addEventListener('click', cancelPaymentHandler);
+            document.getElementById('simulate-payment-btn').addEventListener('click', simulatePaymentSuccess);
+            document.getElementById('test-mode-btn').addEventListener('click', startTestMode);
+            
+            // 初始化时禁用停止按钮
+            document.getElementById('stop-recognition-btn').disabled = true;
+            
+            // 加载实际商品数据
+            loadActualProducts();
+        });
+        
+        // 加载实际商品数据
+        function loadActualProducts() {
+            fetch('/api/products/')
+                .then(res => res.json())
+                .then(data => {
+                    // 处理DRF分页格式
+                    if (data.results) {
+                        actualProducts = data.results;
+                    } else if (Array.isArray(data)) {
+                        actualProducts = data;
+                    }
+                    
+                    // 如果没有商品数据，使用默认商品
+                    if (actualProducts.length === 0) {
+                        actualProducts = [
+                            { name: '商品1', price: 2.5, location: 'A1' },
+                            { name: '商品2', price: 3.0, location: 'A2' },
+                            { name: '商品3', price: 4.0, location: 'B1' },
+                            { name: '商品4', price: 5.0, location: 'B2' }
+                        ];
+                    }
+                    
+                    addLog(`已加载 ${actualProducts.length} 件实际商品`);
+                })
+                .catch(err => {
+                    addLog('加载商品数据失败，使用默认商品', 'error');
+                    // 使用默认商品
+                    actualProducts = [
+                        { name: '商品1', price: 2.5, location: 'A1' },
+                        { name: '商品2', price: 3.0, location: 'A2' },
+                        { name: '商品3', price: 4.0, location: 'B1' },
+                        { name: '商品4', price: 5.0, location: 'B2' }
+                    ];
+                });
+        }
+
+        // 初始化摄像头
+        function initCamera() {
+            const video = document.getElementById('camera-stream');
+            
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                    .then(function(stream) {
+                        video.srcObject = stream;
+                        cameraStream = stream; // 保存流引用
+                        addLog('摄像头已连接');
+                    })
+                    .catch(function(err) {
+                        addLog('摄像头连接失败: ' + err.message, 'error');
+                        document.getElementById('recognition-status').textContent = '摄像头未连接';
+                        document.getElementById('recognition-status').className = 'text-lg font-bold text-ff4757';
+                    });
+            } else {
+                addLog('浏览器不支持摄像头', 'error');
+            }
+        }
+
+        // 开始识别
+        function startRecognition() {
+            if (recognitionActive) return;
+            
+            recognitionActive = true;
+            document.getElementById('start-recognition-btn').disabled = true;
+            document.getElementById('stop-recognition-btn').disabled = false;
+            document.getElementById('recognition-status').textContent = '启动摄像头...';
+            document.getElementById('recognition-status').className = 'text-lg font-bold text-00ccff';
+            
+            // 更新状态指示器
+            const statusIndicator = document.querySelector('.status-indicator');
+            statusIndicator.className = 'status-indicator running';
+            statusIndicator.nextSibling.textContent = '运行中';
+            
+            // 更新检测状态
+            updateDetectionStatus('启动摄像头...');
+            
+            addLog('开始商品识别');
+            
+            // 启动后端摄像头
+            fetch('/optimization/camera/start/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        addLog('摄像头启动成功');
+                        document.getElementById('recognition-status').textContent = '识别中...';
+                        updateDetectionStatus('正在扫描...', true);
+                        
+                        // 添加扫描线效果
+                        const overlay = document.getElementById('detection-overlay');
+                        if (overlay) {
+                            const scanningLine = document.createElement('div');
+                            scanningLine.className = 'scanning-line';
+                            overlay.appendChild(scanningLine);
+                        }
+                        
+                        // 初始化摄像头
+                        initCamera();
+                        
+                        // 开始识别过程
+                        simulateRecognition();
+                    } else {
+                        addLog('摄像头启动失败: ' + data.message, 'error');
+                        document.getElementById('recognition-status').textContent = '摄像头启动失败';
+                        document.getElementById('recognition-status').className = 'text-lg font-bold text-ff4757';
+                        updateDetectionStatus('摄像头启动失败');
+                        
+                        // 恢复状态
+                        recognitionActive = false;
+                        document.getElementById('start-recognition-btn').disabled = false;
+                        document.getElementById('stop-recognition-btn').disabled = true;
+                        statusIndicator.className = 'status-indicator stopped';
+                        statusIndicator.nextSibling.textContent = '已停止';
+                    }
+                })
+                .catch(error => {
+                    addLog('摄像头启动失败: ' + error.message, 'error');
+                    document.getElementById('recognition-status').textContent = '摄像头启动失败';
+                    document.getElementById('recognition-status').className = 'text-lg font-bold text-ff4757';
+                    updateDetectionStatus('摄像头启动失败');
+                    
+                    // 恢复状态
+                    recognitionActive = false;
+                    document.getElementById('start-recognition-btn').disabled = false;
+                    document.getElementById('stop-recognition-btn').disabled = true;
+                    const statusIndicator = document.querySelector('.status-indicator');
+                    if (statusIndicator) {
+                        statusIndicator.className = 'status-indicator stopped';
+                        statusIndicator.nextSibling.textContent = '已停止';
+                    }
+                });
+        }
+
+        // 停止识别
+        function stopRecognition() {
+            recognitionActive = false;
+            document.getElementById('start-recognition-btn').disabled = false;
+            document.getElementById('stop-recognition-btn').disabled = true;
+            document.getElementById('recognition-status').textContent = '已停止';
+            document.getElementById('recognition-status').className = 'text-lg font-bold text-ff4757';
+            
+            // 更新状态指示器
+            const statusIndicator = document.querySelector('.status-indicator');
+            statusIndicator.className = 'status-indicator stopped';
+            statusIndicator.nextSibling.textContent = '已停止';
+            
+            // 更新检测状态
+            updateDetectionStatus('已停止');
+            
+            // 关闭摄像头
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => {
+                    track.stop();
+                });
+                const video = document.getElementById('camera-stream');
+                video.srcObject = null;
+                cameraStream = null;
+                addLog('摄像头已关闭');
+            }
+            
+            // 清空检测框
+            const overlay = document.getElementById('detection-overlay');
+            if (overlay) {
+                overlay.innerHTML = '';
+            }
+            
+            addLog('停止商品识别');
+        }
+
+        // 抓拍识别 - 修改为截取摄像头画面并调用YOLOv8识别
+        function captureRecognition() {
+            addLog('正在抓拍识别...');
+            
+            const video = document.getElementById('camera-stream');
+            if (!video || !video.srcObject) {
+                addLog('摄像头未连接，请先点击"开始识别"', 'error');
+                return;
+            }
+            
+            // 创建canvas截取画面
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            // 转换为base64
+            const imageData = canvas.toDataURL('image/jpeg', 0.9);
+            
+            addLog('抓拍成功，正在识别...');
+            updateDetectionStatus('识别中...', true);
+            
+            // 调用YOLOv8识别API
+            fetch('/test-recognize/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const products = data.products || [];
+                    
+                    // 更新已识别商品，匹配数据库中的商品ID
+                    recognizedProducts = products.map(p => {
+                        // 匹配数据库中的商品
+                        const matchedProduct = actualProducts.find(ap => {
+                            // 模糊匹配商品名称
+                            return ap.name && (
+                                ap.name.includes(p.name) || 
+                                p.name.includes(ap.name) ||
+                                ap.name === p.name
+                            );
+                        });
+                        
+                        return {
+                            id: matchedProduct ? matchedProduct.id : null,
+                            name: p.name,
+                            price: p.price,
+                            position: '-',
+                            confidence: p.confidence
+                        };
+                    });
+                    
+                    updateRecognizedProducts(recognizedProducts);
+                    updateDetectionOverlay(recognizedProducts);
+                    
+                    document.getElementById('recognition-status').textContent = '已识别 ' + products.length + ' 件商品';
+                    document.getElementById('recognition-status').className = 'text-lg font-bold text-00ff88';
+                    updateDetectionStatus('识别成功！');
+                    addLog('抓拍识别完成，识别到 ' + products.length + ' 件商品');
+                } else {
+                    document.getElementById('recognition-status').textContent = '识别失败';
+                    document.getElementById('recognition-status').className = 'text-lg font-bold text-ff4757';
+                    updateDetectionStatus('识别失败');
+                    addLog('识别失败: ' + (data.error || '未知错误'), 'error');
+                }
+            })
+            .catch(error => {
+                document.getElementById('recognition-status').textContent = '识别失败';
+                document.getElementById('recognition-status').className = 'text-lg font-bold text-ff4757';
+                updateDetectionStatus('识别失败');
+                addLog('识别失败: ' + error.message, 'error');
+            });
+        }
+
+        // 实际识别过程（使用摄像头画面和YOLOv8）
+        function simulateRecognition() {
+            if (!recognitionActive) return;
+            
+            const video = document.getElementById('camera-stream');
+            if (!video || !video.srcObject || video.readyState < 2) {
+                // 视频还没准备好，继续等待
+                if (recognitionActive) {
+                    setTimeout(simulateRecognition, 500);
+                }
+                return;
+            }
+            
+            // 实时更新检测状态
+            updateDetectionStatus('正在扫描...', true);
+            
+            // 创建canvas截取画面
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            // 转换为base64
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // 调用YOLOv8识别API
+            fetch('/test-recognize/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!recognitionActive) return;
+                
+                if (data.success) {
+                    const products = data.products || [];
+                    
+                    // 更新已识别商品，匹配数据库中的商品ID
+                    recognizedProducts = products.map(p => {
+                        // 匹配数据库中的商品
+                        const matchedProduct = actualProducts.find(ap => {
+                            // 模糊匹配商品名称
+                            return ap.name && (
+                                ap.name.includes(p.name) || 
+                                p.name.includes(ap.name) ||
+                                ap.name === p.name
+                            );
+                        });
+                        
+                        return {
+                            id: matchedProduct ? matchedProduct.id : null,
+                            name: p.name,
+                            price: p.price,
+                            position: '-',
+                            confidence: p.confidence
+                        };
+                    });
+                    
+                    updateRecognizedProducts(recognizedProducts);
+                    updateDetectionOverlay(recognizedProducts);
+                    
+                    if (products.length > 0) {
+                        document.getElementById('recognition-status').textContent = '已识别 ' + products.length + ' 件商品';
+                        document.getElementById('recognition-status').className = 'text-lg font-bold text-00ff88';
+                        updateDetectionStatus('识别成功！');
+                    } else {
+                        document.getElementById('recognition-status').textContent = '等待商品...';
+                        document.getElementById('recognition-status').className = 'text-lg font-bold text-gray-400';
+                        updateDetectionStatus('等待商品...');
+                    }
+                }
+                
+                // 继续识别（每秒一次）
+                if (recognitionActive) {
+                    setTimeout(simulateRecognition, 1000);
+                }
+            })
+            .catch(error => {
+                if (!recognitionActive) return;
+                
+                console.error('识别错误:', error);
+                
+                // 继续识别
+                if (recognitionActive) {
+                    setTimeout(simulateRecognition, 1000);
+                }
+            });
+        }
+
+        // 更新已识别商品列表
+        function updateRecognizedProducts(products) {
+            recognizedProducts = products;
+            const container = document.getElementById('recognized-products');
+            const count = document.getElementById('product-count');
+            
+            count.textContent = products.length;
+            
+            if (products.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fa fa-shopping-cart text-4xl mb-2"></i>
+                        <p>暂无识别商品</p>
+                    </div>
+                `;
+                document.getElementById('pay-btn').disabled = true;
+                return;
+            }
+            
+            container.innerHTML = products.map((product, index) => `
+                <div class="product-item">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="font-medium">${product.name || '未知商品'}</div>
+                            <div class="text-sm text-gray-400">位置: ${product.position || '-'}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-00ff88">¥${parseFloat(product.price || 0).toFixed(2)}</div>
+                            <button onclick="removeProduct(${index})" class="text-gray-500 hover:text-ff4757 text-sm">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('pay-btn').disabled = false;
+            updateOrderInfo();
+        }
+
+        // 更新检测框
+        function updateDetectionOverlay(products) {
+            const overlay = document.getElementById('detection-overlay');
+            
+            if (products.length === 0) {
+                overlay.innerHTML = '';
+                return;
+            }
+            
+            // 模拟检测框位置 - 更真实的位置分布
+            overlay.innerHTML = products.map((product, index) => {
+                // 随机位置，但保持在合理范围内
+                const x = Math.random() * 30 + 10; // 10-40%
+                const y = Math.random() * 40 + 10; // 10-50%
+                const width = Math.random() * 20 + 40; // 40-60%
+                const height = Math.random() * 15 + 35; // 35-50%
+                
+                // 判断是否为已知商品
+                const isKnown = product.name && product.name !== '未知商品';
+                const boxClass = isKnown ? 'detection-box' : 'detection-box unknown';
+                const labelClass = isKnown ? 'detection-label' : 'detection-label unknown';
+                
+                return `
+                    <div class="${boxClass}" style="left: ${x}%; top: ${y}%; width: ${width}%; height: ${height}%;">
+                        <div class="${labelClass}">
+                            ${isKnown ? product.name : '未知商品'}
+                            ${isKnown && product.price ? ` (¥${parseFloat(product.price).toFixed(2)})` : ''}
+                        </div>
+                        ${isKnown && product.position ? `
+                            <div class="absolute bottom-2 right-2 text-xs text-white bg-black bg-opacity-50 px-2 py-1 rounded">
+                                ${product.position}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 更新检测状态
+        function updateDetectionStatus(status, isScanning = false) {
+            const statusElement = document.getElementById('detection-status');
+            if (statusElement) {
+                statusElement.textContent = status;
+                if (isScanning) {
+                    statusElement.className = 'detection-status scanning';
+                } else {
+                    statusElement.className = 'detection-status';
+                }
+            }
+        }
+
+        // 更新订单信息
+        function updateOrderInfo() {
+            const container = document.getElementById('order-info');
+            
+            if (recognizedProducts.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fa fa-file-text-o text-4xl mb-2"></i>
+                        <p>暂无订单</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const total = recognizedProducts.reduce((sum, p) => sum + parseFloat(p.price || 0), 0);
+            
+            container.innerHTML = `
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center pb-2 border-b border-gray-700">
+                        <span class="text-gray-400">商品数量</span>
+                        <span class="font-medium">${recognizedProducts.length} 件</span>
+                    </div>
+                    <div class="flex justify-between items-center pb-2 border-b border-gray-700">
+                        <span class="text-gray-400">订单总额</span>
+                        <span class="text-2xl font-bold text-00ff88">¥${total.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400">应付金额</span>
+                        <span class="text-xl font-bold">¥${total.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 选择支付方式
+        function selectPaymentMethod(method) {
+            selectedPaymentMethod = method;
+            
+            document.querySelectorAll('.payment-method').forEach(el => {
+                el.classList.remove('selected');
+                const checkIcon = el.querySelector('.fa-check');
+                if (checkIcon) {
+                    checkIcon.className = 'fa fa-check text-gray-600';
+                }
+            });
+            
+            const selectedEl = document.querySelector(`.payment-method:nth-child(${method === 'alipay' ? 1 : 2})`);
+            selectedEl.classList.add('selected');
+            const checkIcon = selectedEl.querySelector('.fa-check');
+            if (checkIcon) {
+                checkIcon.className = 'fa fa-check text-00ff88';
+            }
+        }
+
+        // 生成支付码
+        document.getElementById('pay-btn').addEventListener('click', function() {
+            if (recognizedProducts.length === 0) {
+                addLog('请先识别商品', 'error');
+                return;
+            }
+            
+            // 创建测试订单
+            fetch('/api/orders/create_test_order/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    items: recognizedProducts.map(p => ({
+                        product_name: p.name,
+                        quantity: 1,
+                        price: parseFloat(p.price || 0)
+                    }))
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    orderId = data.order_id;
+                    
+                    addLog('订单已创建，订单号: ' + data.order_no);
+                    
+                    // 显示支付二维码
+                    document.getElementById('payment-qr').style.display = 'block';
+                    document.getElementById('pay-btn').style.display = 'none';
+                    
+                    addLog('请使用' + (selectedPaymentMethod === 'alipay' ? '支付宝' : '微信') + '扫码支付');
+                    addLog('支付金额: ¥' + data.total_amount.toFixed(2));
+                    
+                    // 显示支付信息
+                    const qrCodeElement = document.getElementById('payment-qr-code');
+                    if (qrCodeElement) {
+                        qrCodeElement.innerHTML = `
+                            <div class="text-center">
+                                <div class="bg-white p-4 inline-block rounded">
+                                    <div class="text-3xl mb-4">
+                                        ${selectedPaymentMethod === 'alipay' ? '<i class="fa fa-alipay text-blue-500"></i>' : '<i class="fa fa-weixin text-green-500"></i>'}
+                                    </div>
+                                    <div class="text-lg font-bold mb-2">¥${data.total_amount.toFixed(2)}</div>
+                                    <div class="text-sm text-gray-500 mb-4">${data.order_no}</div>
+                                    <div class="w-48 h-48 bg-gray-200 flex items-center justify-center">
+                                        <i class="fa fa-qrcode text-5xl text-gray-400"></i>
+                                    </div>
+                                </div>
+                                <p class="mt-3 text-sm text-gray-400">请扫描二维码完成支付</p>
+                            </div>
+                        `;
+                    }
+                    
+                    // 开始倒计时
+                    startPaymentCountdown();
+                } else {
+                    throw new Error('创建订单失败');
+                }
+            })
+            .catch(err => {
+                addLog('创建订单失败: ' + err.message, 'error');
+            });
+        });
+
+        // 支付倒计时
+        function startPaymentCountdown() {
+            let timeLeft = 60;
+            const countdownEl = document.getElementById('payment-countdown');
+            const progressEl = document.getElementById('payment-progress');
+            
+            paymentTimer = setInterval(function() {
+                timeLeft--;
+                countdownEl.textContent = timeLeft + '秒';
+                progressEl.style.width = (timeLeft / 60 * 100) + '%';
+                
+                if (timeLeft <= 10) {
+                    countdownEl.className = 'text-ff4757 font-bold';
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(paymentTimer);
+                    cancelPayment();
+                    addLog('支付超时，订单已取消', 'error');
+                }
+            }, 1000);
+        }
+
+        // 取消支付
+        function cancelPayment() {
+            if (paymentTimer) {
+                clearInterval(paymentTimer);
+                paymentTimer = null;
+            }
+            
+            document.getElementById('payment-qr').style.display = 'none';
+            document.getElementById('pay-btn').style.display = 'flex';
+            
+            // 取消订单
+            if (orderId) {
+                fetch(`/api/orders/${orderId}/cancel/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    addLog('订单已取消');
+                })
+                .catch(err => {
+                    console.error('取消订单失败:', err);
+                });
+                
+                orderId = null;
+            }
+        }
+
+        // 移除商品
+        function removeProduct(index) {
+            recognizedProducts.splice(index, 1);
+            updateRecognizedProducts(recognizedProducts);
+            addLog('已移除商品');
+        }
+
+        // 重置
+        function resetRecognition() {
+            if (confirm('确定要重置吗？')) {
+                recognizedProducts = [];
+                updateRecognizedProducts([]);
+                updateDetectionOverlay([]);
+                cancelPayment();
+                addLog('已重置');
+            }
+        }
+
+        // 取消支付按钮
+        function cancelPaymentHandler() {
+            cancelPayment();
+            addLog('已取消支付');
+        }
+        
+        // 模拟支付成功
+        function simulatePaymentSuccess() {
+            if (!orderId) {
+                addLog('没有待支付的订单', 'error');
+                return;
+            }
+            
+            addLog('正在模拟支付成功...');
+            
+            // 调用订单支付 API
+            fetch(`/api/orders/${orderId}/pay/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // 停止倒计时
+                    if (paymentTimer) {
+                        clearInterval(paymentTimer);
+                        paymentTimer = null;
+                    }
+                    
+                    // 隐藏支付二维码
+                    document.getElementById('payment-qr').style.display = 'none';
+                    
+                    // 更新支付状态
+                    const paymentStatusDiv = document.getElementById('payment-status');
+                    paymentStatusDiv.innerHTML = `
+                        <div class="text-00ff88">
+                            <i class="fa fa-check-circle text-2xl mb-2"></i>
+                            <p>支付成功</p>
+                        </div>
+                    `;
+                    
+                    addLog('支付成功！', 'info');
+                    
+                    // 清空识别的商品
+                    recognizedProducts = [];
+                    updateRecognizedProducts([]);
+                    updateDetectionOverlay([]);
+                    
+                    // 重置支付相关变量
+                    orderId = null;
+                    paymentId = null;
+                    
+                    // 显示支付按钮
+                    document.getElementById('pay-btn').style.display = 'flex';
+                } else {
+                    addLog('支付失败: ' + (data.message || '未知错误'), 'error');
+                }
+            })
+            .catch(err => {
+                addLog('支付失败: ' + err.message, 'error');
+            });
+        }
+
+        // 测试模式 - 模拟完整购买流程
+        async function startTestMode() {
+            addLog('========== 测试模式启动 ==========', 'info');
+            
+            try {
+                // 步骤1: 模拟识别营养快线
+                addLog('步骤1: 模拟识别营养快线...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // 查找营养快线商品
+                const nutriProduct = actualProducts.find(p => 
+                    p.name && (p.name.includes('营养快线') || p.name.includes('Nutrition'))
+                );
+                
+                if (!nutriProduct) {
+                    addLog('错误: 未找到营养快线商品，使用默认商品', 'error');
+                    // 使用第一个商品作为默认
+                    const defaultProduct = actualProducts[0];
+                    if (!defaultProduct) {
+                        addLog('错误: 没有可用的商品', 'error');
+                        return;
+                    }
+                    simulateProductRecognition(defaultProduct);
+                } else {
+                    simulateProductRecognition(nutriProduct);
+                }
+                
+                // 步骤2: 等待2秒后创建订单
+                addLog('步骤2: 等待2秒后创建订单...');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // 步骤3: 创建订单
+                addLog('步骤3: 创建订单...');
+                const orderCreated = await createTestOrder();
+                if (!orderCreated) {
+                    addLog('错误: 订单创建失败', 'error');
+                    return;
+                }
+                
+                // 步骤4: 模拟支付
+                addLog('步骤4: 模拟支付流程...');
+                await simulatePayment();
+                
+                addLog('========== 测试模式完成 ==========', 'info');
+                
+            } catch (error) {
+                addLog('测试模式错误: ' + error.message, 'error');
+            }
+        }
+
+        // 模拟商品识别
+        function simulateProductRecognition(product) {
+            addLog(`识别到商品: ${product.name} (价格: ¥${product.price})`);
+            
+            // 添加到已识别商品列表
+            recognizedProducts = [{
+                name: product.name,
+                price: parseFloat(product.price || 0),
+                position: product.location || product.position || 'A',
+                confidence: 0.95
+            }];
+            
+            updateRecognizedProducts(recognizedProducts);
+            updateDetectionOverlay(recognizedProducts);
+            
+            document.getElementById('recognition-status').textContent = '已识别 1 件商品';
+            document.getElementById('recognition-status').className = 'text-lg font-bold text-00ff88';
+            
+            // 启用支付按钮
+            document.getElementById('pay-btn').disabled = false;
+        }
+
+        // 创建测试订单
+        async function createTestOrder() {
+            try {
+                const response = await fetch('/api/orders/create_test_order/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        items: recognizedProducts.map(p => ({
+                            product_name: p.name,
+                            quantity: 1,
+                            price: p.price
+                        }))
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success' || data.id) {
+                    orderId = data.order_id || data.id;
+                    addLog(`订单创建成功: 订单号 ${data.order_no || orderId}`);
+                    return true;
+                } else {
+                    addLog('订单创建失败: ' + (data.message || '未知错误'), 'error');
+                    return false;
+                }
+            } catch (error) {
+                addLog('订单创建异常: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // 模拟支付流程
+        async function simulatePayment() {
+            // 显示支付二维码
+            document.getElementById('payment-qr').style.display = 'block';
+            document.getElementById('pay-btn').style.display = 'none';
+            
+            addLog('显示支付二维码...');
+            addLog('等待支付... (10秒后自动模拟支付成功)');
+            
+            // 显示模拟的二维码
+            const qrContainer = document.getElementById('qr-code');
+            if (qrContainer) {
+                qrContainer.innerHTML = `
+                    <div class="text-center">
+                        <div class="w-48 h-48 bg-white mx-auto mb-4 flex items-center justify-center">
+                            <i class="fa fa-qrcode text-6xl text-gray-800"></i>
+                        </div>
+                        <p class="text-sm text-gray-400">模拟支付二维码</p>
+                        <p class="text-xs text-gray-500 mt-2">10秒后自动支付成功</p>
+                        <div class="mt-4">
+                            <div class="w-full bg-gray-700 rounded-full h-2">
+                                <div id="payment-progress" class="bg-00ff88 h-2 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                            </div>
+                            <p id="payment-countdown" class="text-xs text-gray-400 mt-2">剩余 10 秒</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 倒计时动画
+            for (let i = 10; i >= 1; i--) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const progress = document.getElementById('payment-progress');
+                const countdown = document.getElementById('payment-countdown');
+                if (progress) progress.style.width = ((10 - i) / 10 * 100) + '%';
+                if (countdown) countdown.textContent = `剩余 ${i - 1} 秒`;
+            }
+            
+            // 模拟支付成功
+            await processPaymentSuccess();
+        }
+
+        // 处理支付成功
+        async function processPaymentSuccess() {
+            try {
+                // 调用后端API更新订单状态
+                const response = await fetch(`/api/orders/${orderId}/pay/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                
+                const data = await response.json();
+                
+                // 隐藏支付二维码
+                document.getElementById('payment-qr').style.display = 'none';
+                document.getElementById('pay-btn').style.display = 'flex';
+                
+                // 显示支付成功提示
+                addLog('支付成功！', 'info');
+                
+                // 显示成功提示
+                const orderInfo = document.getElementById('order-info');
+                if (orderInfo) {
+                    orderInfo.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fa fa-check-circle text-6xl text-00ff88 mb-4"></i>
+                            <p class="text-xl font-bold text-00ff88">支付成功</p>
+                            <p class="text-gray-400 mt-2">订单已完成</p>
+                            <p class="text-sm text-gray-500 mt-4">请取走您的商品</p>
+                        </div>
+                    `;
+                }
+                
+                // 清空已识别商品
+                recognizedProducts = [];
+                updateRecognizedProducts([]);
+                
+                // 3秒后重置页面
+                setTimeout(() => {
+                    location.reload();
+                }, 3000);
+                
+            } catch (error) {
+                addLog('支付处理异常: ' + error.message, 'error');
+            }
+        }
+
+        // 添加日志
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('recognition-log');
+            const timestamp = new Date().toLocaleTimeString('zh-CN');
+            const colorClass = type === 'error' ? 'text-ff4757' : 'text-gray-300';
+            
+            const logItem = document.createElement('div');
+            logItem.className = colorClass;
+            logItem.innerHTML = `<span class="text-gray-500">[${timestamp}]</span> ${message}`;
+            
+            logContainer.appendChild(logItem);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // 获取CSRF Token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

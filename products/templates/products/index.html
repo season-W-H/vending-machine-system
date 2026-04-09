@@ -1,0 +1,429 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能商品识别系统 - 首页</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --danger-color: #dc3545;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .main-container {
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        .header-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 300;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            height: 100%;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1);
+        }
+
+        .icon-recognition {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+
+        .icon-inventory {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+
+        .icon-orders {
+            background: linear-gradient(135deg, #45b7d1, #2980b9);
+            color: white;
+        }
+
+        .icon-test {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .icon-monitor {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+        }
+
+        .icon-performance {
+            background: linear-gradient(135deg, #1abc9c, #16a085);
+            color: white;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .feature-description {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+
+        .btn-custom {
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-recognition {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+
+        .btn-recognition:hover {
+            background: linear-gradient(135deg, #ee5a24, #ff6b6b);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(238, 90, 36, 0.4);
+        }
+
+        .btn-inventory {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+
+        .btn-inventory:hover {
+            background: linear-gradient(135deg, #44a08d, #4ecdc4);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(78, 205, 196, 0.4);
+        }
+
+        .btn-orders {
+            background: linear-gradient(135deg, #45b7d1, #2980b9);
+            color: white;
+        }
+
+        .btn-orders:hover {
+            background: linear-gradient(135deg, #2980b9, #45b7d1);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(69, 183, 209, 0.4);
+        }
+
+        .btn-test {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .btn-test:hover {
+            background: linear-gradient(135deg, #e67e22, #f39c12);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(243, 156, 18, 0.4);
+        }
+
+        .btn-monitor {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+        }
+
+        .btn-monitor:hover {
+            background: linear-gradient(135deg, #8e44ad, #9b59b6);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(155, 89, 182, 0.4);
+        }
+
+        .btn-performance {
+            background: linear-gradient(135deg, #1abc9c, #16a085);
+            color: white;
+        }
+
+        .btn-performance:hover {
+            background: linear-gradient(135deg, #16a085, #1abc9c);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(26, 188, 156, 0.4);
+        }
+
+        .stats-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .footer {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 1.8rem;
+            }
+
+            .header-section {
+                padding: 25px;
+            }
+
+            .feature-card {
+                padding: 20px;
+            }
+
+            .feature-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="container">
+            <!-- Header Section -->
+            <div class="header-section text-center">
+                <h1 class="header-title">
+                    <i class="bi bi-bag-fill me-3"></i>
+                    智能商品识别系统
+                </h1>
+                <p class="header-subtitle">
+                    基于YOLOv8、SAM和Mask R-CNN的高级商品识别与管理平台
+                </p>
+            </div>
+
+            <!-- Quick Stats Section -->
+            <div class="stats-section">
+                <div class="row">
+                    <div class="col-md-3 stat-item">
+                        <div class="stat-number" id="total-products">0</div>
+                        <div class="stat-label">总商品数</div>
+                    </div>
+                    <div class="col-md-3 stat-item">
+                        <div class="stat-number" id="total-orders">0</div>
+                        <div class="stat-label">总订单数</div>
+                    </div>
+                    <div class="col-md-3 stat-item">
+                        <div class="stat-number" id="recognition-rate">0%</div>
+                        <div class="stat-label">识别准确率</div>
+                    </div>
+                    <div class="col-md-3 stat-item">
+                        <div class="stat-number" id="system-status">
+                            <span class="badge bg-success">在线</span>
+                        </div>
+                        <div class="stat-label">系统状态</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <div class="row">
+                <!-- 商品识别 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon icon-recognition">
+                            <i class="bi bi-camera-fill"></i>
+                        </div>
+                        <h3 class="feature-title">商品识别</h3>
+                        <p class="feature-description">
+                            实时摄像头商品识别，支持YOLOv8目标检测，自动识别商品并计算价格
+                        </p>
+                        <a href="{% url 'recognition_view' %}" class="btn btn-custom btn-recognition">
+                            <i class="bi bi-arrow-right-circle me-2"></i>
+                            开始识别
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 库存管理 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon icon-inventory">
+                            <i class="bi bi-box-seam-fill"></i>
+                        </div>
+                        <h3 class="feature-title">库存管理</h3>
+                        <p class="feature-description">
+                            实时监控商品库存，智能预警，支持库存查询和管理
+                        </p>
+                        <a href="{% url 'inventory_view' %}" class="btn btn-custom btn-inventory">
+                            <i class="bi bi-arrow-right-circle me-2"></i>
+                            查看库存
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 订单管理 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon icon-orders">
+                            <i class="bi bi-list-check"></i>
+                        </div>
+                        <h3 class="feature-title">订单管理</h3>
+                        <p class="feature-description">
+                            管理所有订单，支持订单状态跟踪、详情查看和统计分析
+                        </p>
+                        <a href="{% url 'orders_view' %}" class="btn btn-custom btn-orders">
+                            <i class="bi bi-arrow-right-circle me-2"></i>
+                            管理订单
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 识别测试 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon icon-test">
+                            <i class="bi bi-flask"></i>
+                        </div>
+                        <h3 class="feature-title">识别测试</h3>
+                        <p class="feature-description">
+                            多算法识别测试平台，支持YOLOv8、SAM、Mask R-CNN对比测试
+                        </p>
+                        <a href="{% url 'recognition_test' %}" class="btn btn-custom btn-test">
+                            <i class="bi bi-arrow-right-circle me-2"></i>
+                            开始测试
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 识别监控 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon icon-monitor">
+                            <i class="bi bi-bar-chart-fill"></i>
+                        </div>
+                        <h3 class="feature-title">识别监控</h3>
+                        <p class="feature-description">
+                            实时监控识别性能，统计识别准确率和算法使用情况
+                        </p>
+                        <a href="{% url 'recognition_monitor' %}" class="btn btn-custom btn-monitor">
+                            <i class="bi bi-arrow-right-circle me-2"></i>
+                            查看监控
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 性能监控 -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon icon-performance">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                        <h3 class="feature-title">性能监控</h3>
+                        <p class="feature-description">
+                            系统性能监控，实时查看CPU、GPU使用情况和推理速度
+                        </p>
+                        <a href="{% url 'performance_monitor' %}" class="btn btn-custom btn-performance">
+                            <i class="bi bi-arrow-right-circle me-2"></i>
+                            性能分析
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>&copy; 2026 智能商品识别系统 | 基于YOLOv8、SAM、Mask R-CNN</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 模拟加载统计数据
+        document.addEventListener('DOMContentLoaded', function() {
+            // 模拟加载动画
+            setTimeout(function() {
+                document.getElementById('total-products').textContent = '156';
+                document.getElementById('total-orders').textContent = '892';
+                document.getElementById('recognition-rate').textContent = '98.5%';
+            }, 500);
+        });
+    </script>
+</body>
+</html>

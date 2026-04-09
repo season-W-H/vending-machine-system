@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物体识别性能监控</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            opacity: 0.8;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid #e9ecef;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .control-group label {
+            font-weight: 500;
+            color: #495057;
+            min-width: 120px;
+        }
+
+        .control-group input,
+        .control-group select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-active {
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+
+        .status-inactive {
+            background: #e74c3c;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .log-container {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+
+        .log-info { color: #3498db; }
+        .log-success { color: #27ae60; }
+        .log-warning { color: #f39c12; }
+        .log-error { color: #e74c3c; }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 物体识别性能监控中心</h1>
+            <p>实时监控识别算法性能，支持模型训练和参数优化</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 性能指标面板 -->
+            <div class="section">
+                <h2>
+                    <span class="status-indicator" id="systemStatus"></span>
+                    性能指标
+                </h2>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="totalRecognitions">0</div>
+                        <div class="metric-label">总识别次数</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="successRate">0%</div>
+                        <div class="metric-label">成功率</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="avgConfidence">0.0</div>
+                        <div class="metric-label">平均置信度</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="accuracy">0%</div>
+                        <div class="metric-label">准确率</div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="refreshMetrics()">
+                        🔄 刷新指标
+                    </button>
+                    <button class="btn btn-warning" onclick="resetStatistics()">
+                        🗑️ 重置统计
+                    </button>
+                </div>
+
+                <div class="log-container" id="logContainer">
+                    <div class="log-entry log-info">系统已启动，等待数据...</div>
+                </div>
+            </div>
+
+            <!-- 模型训练面板 -->
+            <div class="section">
+                <h2>🎯 模型训练</h2>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <label>训练轮数:</label>
+                        <input type="number" id="epochsInput" value="50" min="1" max="200">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>批次大小:</label>
+                        <input type="number" id="batchSizeInput" value="32" min="1" max="128">
+                    </div>
+                    
+                    <button class="btn btn-success" id="trainBtn" onclick="startTraining()">
+                        🚀 开始训练
+                    </button>
+                    
+                    <div class="progress-bar" id="trainingProgress" style="display: none;">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+
+                <div class="metrics-grid" style="margin-top: 20px;">
+                    <div class="metric-card">
+                        <div class="metric-value" id="modelAccuracy">0%</div>
+                        <div class="metric-label">模型准确率</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="modelLoss">0.0</div>
+                        <div class="metric-label">损失值</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 识别设置面板 -->
+            <div class="section">
+                <h2>⚙️ 识别设置</h2>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <label>置信度阈值:</label>
+                        <input type="range" id="confidenceThreshold" min="0" max="100" value="60">
+                        <span id="confidenceValue">0.6</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>识别算法:</label>
+                        <select id="algorithmSelect">
+                            <option value="true">深度学习</option>
+                            <option value="false">传统图像处理</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="updateSettings()">
+                        💾 保存设置
+                    </button>
+                </div>
+            </div>
+
+            <!-- 数据集信息面板 -->
+            <div class="section">
+                <h2>📊 数据集信息</h2>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="trainSamples">0</div>
+                        <div class="metric-label">训练样本</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="valSamples">0</div>
+                        <div class="metric-label">验证样本</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="testSamples">0</div>
+                        <div class="metric-label">测试样本</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="classCount">0</div>
+                        <div class="metric-label">类别数量</div>
+                    </div>
+                </div>
+
+                <div class="controls" style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="loadDatasetInfo()">
+                        📈 加载数据集信息
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isTraining = false;
+        let metricsInterval;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshMetrics();
+            loadDatasetInfo();
+            
+            // 设置定时刷新
+            metricsInterval = setInterval(refreshMetrics, 5000);
+            
+            // 绑定置信度滑块事件
+            const confidenceSlider = document.getElementById('confidenceThreshold');
+            confidenceSlider.addEventListener('input', function() {
+                document.getElementById('confidenceValue').textContent = (this.value / 100).toFixed(2);
+            });
+        });
+
+        // 刷新性能指标
+        async function refreshMetrics() {
+            try {
+                const response = await fetch('/recognition/performance/');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const metrics = data.data;
+                    
+                    document.getElementById('totalRecognitions').textContent = metrics.total_recognitions || 0;
+                    document.getElementById('successRate').textContent = (metrics.success_rate * 100).toFixed(1) + '%';
+                    document.getElementById('avgConfidence').textContent = (metrics.avg_confidence || 0).toFixed(3);
+                    document.getElementById('accuracy').textContent = (metrics.accuracy * 100).toFixed(1) + '%';
+                    
+                    // 更新系统状态指示器
+                    const statusIndicator = document.getElementById('systemStatus');
+                    statusIndicator.className = 'status-indicator status-active';
+                    
+                    addLog('性能指标已更新', 'info');
+                } else {
+                    addLog('获取性能指标失败: ' + data.message, 'error');
+                }
+            } catch (error) {
+                addLog('网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 开始训练
+        async function startTraining() {
+            if (isTraining) return;
+            
+            const epochs = parseInt(document.getElementById('epochsInput').value);
+            const batchSize = parseInt(document.getElementById('batchSizeInput').value);
+            
+            if (epochs < 1 || epochs > 200) {
+                addLog('训练轮数必须在1-200之间', 'warning');
+                return;
+            }
+            
+            if (batchSize < 1 || batchSize > 128) {
+                addLog('批次大小必须在1-128之间', 'warning');
+                return;
+            }
+            
+            isTraining = true;
+            const trainBtn = document.getElementById('trainBtn');
+            const progressBar = document.getElementById('trainingProgress');
+            const progressFill = document.getElementById('progressFill');
+            
+            trainBtn.disabled = true;
+            trainBtn.textContent = '🔄 训练中...';
+            progressBar.style.display = 'block';
+            
+            addLog(`开始训练模型，轮数: ${epochs}, 批次大小: ${batchSize}`, 'info');
+            
+            try {
+                const response = await fetch('/api/recognition/train/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        epochs: epochs,
+                        batch_size: batchSize
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // 模拟训练进度
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += 10;
+                        progressFill.style.width = progress + '%';
+                        
+                        if (progress >= 100) {
+                            clearInterval(progressInterval);
+                            
+                            // 更新训练结果
+                            if (data.data.accuracy) {
+                                document.getElementById('modelAccuracy').textContent = (data.data.accuracy * 100).toFixed(1) + '%';
+                            }
+                            if (data.data.loss) {
+                                document.getElementById('modelLoss').textContent = data.data.loss.toFixed(4);
+                            }
+                            
+                            addLog('模型训练完成！', 'success');
+                            resetTrainingButton();
+                        }
+                    }, 200);
+                } else {
+                    addLog('训练失败: ' + data.message, 'error');
+                    resetTrainingButton();
+                }
+            } catch (error) {
+                addLog('训练请求失败: ' + error.message, 'error');
+                resetTrainingButton();
+            }
+        }
+
+        // 重置训练按钮
+        function resetTrainingButton() {
+            isTraining = false;
+            const trainBtn = document.getElementById('trainBtn');
+            const progressBar = document.getElementById('trainingProgress');
+            const progressFill = document.getElementById('progressFill');
+            
+            trainBtn.disabled = false;
+            trainBtn.textContent = '🚀 开始训练';
+            progressBar.style.display = 'none';
+            progressFill.style.width = '0%';
+        }
+
+        // 更新识别设置
+        async function updateSettings() {
+            const confidenceThreshold = document.getElementById('confidenceThreshold').value / 100;
+            const useDeepLearning = document.getElementById('algorithmSelect').value === 'true';
+            
+            try {
+                const response = await fetch('/api/recognition/settings/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        confidence_threshold: confidenceThreshold,
+                        use_deep_learning: useDeepLearning
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    addLog('识别设置已更新', 'success');
+                } else {
+                    addLog('设置更新失败: ' + data.message, 'error');
+                }
+            } catch (error) {
+                addLog('设置请求失败: ' + error.message, 'error');
+            }
+        }
+
+        // 重置统计信息
+        async function resetStatistics() {
+            if (!confirm('确定要重置所有统计信息吗？')) return;
+            
+            try {
+                const response = await fetch('/api/recognition/reset-stats/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    addLog('统计信息已重置', 'success');
+                    refreshMetrics();
+                } else {
+                    addLog('重置失败: ' + data.message, 'error');
+                }
+            } catch (error) {
+                addLog('重置请求失败: ' + error.message, 'error');
+            }
+        }
+
+        // 加载数据集信息
+        async function loadDatasetInfo() {
+            try {
+                const response = await fetch('/recognition/dataset-info/');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const info = data.data;
+                    document.getElementById('trainSamples').textContent = info.train_samples || 0;
+                    document.getElementById('valSamples').textContent = info.val_samples || 0;
+                    document.getElementById('testSamples').textContent = info.test_samples || 0;
+                    document.getElementById('classCount').textContent = info.class_count || 0;
+                    
+                    addLog('数据集信息已加载', 'info');
+                } else {
+                    // 模拟数据集信息
+                    document.getElementById('trainSamples').textContent = '800';
+                    document.getElementById('valSamples').textContent = '200';
+                    document.getElementById('testSamples').textContent = '300';
+                    document.getElementById('classCount').textContent = '10';
+                    
+                    addLog('使用模拟数据集信息', 'warning');
+                }
+            } catch (error) {
+                // 模拟数据集信息
+                document.getElementById('trainSamples').textContent = '800';
+                document.getElementById('valSamples').textContent = '200';
+                document.getElementById('testSamples').textContent = '300';
+                document.getElementById('classCount').textContent = '10';
+                
+                addLog('使用模拟数据集信息', 'warning');
+            }
+        }
+
+        // 添加日志
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // 限制日志条数
+            const logs = logContainer.querySelectorAll('.log-entry');
+            if (logs.length > 50) {
+                logs[0].remove();
+            }
+        }
+
+        // 获取CSRF Token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // 页面卸载时清理定时器
+        window.addEventListener('beforeunload', function() {
+            if (metricsInterval) {
+                clearInterval(metricsInterval);
+            }
+        });
+    </script>
+</body>
+</html>

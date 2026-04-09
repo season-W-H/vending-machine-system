@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模型测试页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            color: #fff;
+            font-size: 2em;
+            font-weight: 300;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .panel h2 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            font-weight: 500;
+        }
+
+        .upload-area {
+            border: 3px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #3498db;
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: #27ae60;
+            background: rgba(39, 174, 96, 0.2);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1em;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .preview-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-panel {
+            color: #fff;
+        }
+
+        .result-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-info {
+            flex: 1;
+        }
+
+        .result-name {
+            font-size: 1.2em;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .result-confidence {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .result-price {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        .status {
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .status-success {
+            background: rgba(39, 174, 96, 0.3);
+            color: #27ae60;
+        }
+
+        .status-error {
+            background: rgba(231, 76, 60, 0.3);
+            color: #e74c3c;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .total-price {
+            font-size: 2em;
+            font-weight: bold;
+            color: #f39c12;
+            text-align: center;
+            padding: 20px;
+            background: rgba(243, 156, 18, 0.2);
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖼️ YOLOv8 模型测试</h1>
+        </div>
+
+        <div class="main-content">
+            <div class="panel">
+                <h2>📸 上传图片</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📤</div>
+                    <div class="upload-text">点击或拖拽图片到此处</div>
+                </div>
+                <input type="file" id="fileInput" accept="image/*">
+                
+                <div class="preview-container">
+                    <img id="imagePreview" alt="预览">
+                </div>
+                
+                <button class="btn btn-primary" id="recognizeBtn" disabled onclick="recognizeImage()">
+                    🔍 开始识别
+                </button>
+            </div>
+
+            <div class="panel">
+                <h2>📊 识别结果</h2>
+                <div class="results-panel" id="resultsPanel">
+                    <div style="color: rgba(255,255,255,0.5); text-align: center; padding: 40px;">
+                        请上传图片进行识别
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <input type="hidden" id="base64Image">
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const recognizeBtn = document.getElementById('recognizeBtn');
+        const resultsPanel = document.getElementById('resultsPanel');
+        const base64Image = document.getElementById('base64Image');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('请选择图片文件');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+                base64Image.value = e.target.result;
+                recognizeBtn.disabled = false;
+                
+                resultsPanel.innerHTML = `
+                    <div style="color: rgba(255,255,255,0.5); text-align: center; padding: 20px;">
+                        点击"开始识别"按钮进行识别
+                    </div>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function recognizeImage() {
+            const imageData = base64Image.value;
+            if (!imageData) {
+                alert('请先选择图片');
+                return;
+            }
+
+            recognizeBtn.disabled = true;
+            resultsPanel.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>正在识别中...</div>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/test-recognize/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    resultsPanel.innerHTML = `
+                        <div class="status status-error">❌ 识别失败: ${data.error || '未知错误'}</div>
+                    `;
+                }
+            } catch (error) {
+                resultsPanel.innerHTML = `
+                    <div class="status status-error">❌ 请求失败: ${error.message}</div>
+                `;
+            }
+
+            recognizeBtn.disabled = false;
+        }
+
+        function displayResults(data) {
+            let html = '';
+            
+            if (data.products && data.products.length > 0) {
+                data.products.forEach(product => {
+                    html += `
+                        <div class="result-item">
+                            <div class="result-info">
+                                <div class="result-name">${product.name}</div>
+                                <div class="result-confidence">置信度: ${(product.confidence * 100).toFixed(1)}%</div>
+                            </div>
+                            <div class="result-price">¥${product.price.toFixed(2)}</div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                    <div class="total-price">
+                        总计: ¥${data.total_price.toFixed(2)}
+                    </div>
+                `;
+            } else {
+                html = `
+                    <div class="status status-error">未检测到商品</div>
+                `;
+            }
+
+            resultsPanel.innerHTML = html;
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

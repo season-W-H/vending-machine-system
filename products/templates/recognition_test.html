@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能物体识别系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2em;
+            font-weight: 300;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        .nav-btn.secondary {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .video-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            aspect-ratio: 4/3;
+        }
+
+        #videoElement {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .panel h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .metric-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: #7f8c8d;
+            margin-top: 2px;
+        }
+
+        .results-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .result-item {
+            background: white;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-info {
+            flex: 1;
+        }
+
+        .result-name {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .result-confidence {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+
+        .result-price {
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-active {
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+
+        .status-inactive {
+            background: #e74c3c;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .performance-chart {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .chart-label {
+            width: 80px;
+            font-size: 0.9em;
+            color: #495057;
+        }
+
+        .chart-progress {
+            flex: 1;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+
+        .chart-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+            transition: width 0.3s ease;
+        }
+
+        .chart-value {
+            font-size: 0.9em;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .nav-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部导航 -->
+        <div class="header">
+            <h1>🤖 智能物体识别系统</h1>
+            <div class="nav-buttons">
+                <a href="/recognition/" class="nav-btn active">实时识别</a>
+                <a href="/recognition/monitor/" class="nav-btn secondary">性能监控</a>
+            </div>
+        </div>
+
+        <!-- 主要内容 -->
+        <div class="main-content">
+            <!-- 视频区域 -->
+            <div class="video-section">
+                <div class="video-container">
+                    <img id="videoElement" src="" alt="摄像头画面">
+                    <div class="video-overlay">
+                        <span class="status-indicator" id="cameraStatus"></span>
+                        <span id="statusText">摄像头未启动</span>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-success" id="startBtn" onclick="startCamera()">
+                        🎥 启动摄像头
+                    </button>
+                    <button class="btn btn-danger" id="stopBtn" onclick="stopCamera()" disabled>
+                        ⏹️ 停止摄像头
+                    </button>
+                    <button class="btn btn-primary" onclick="captureFrame()">
+                        📸 拍照识别
+                    </button>
+                </div>
+            </div>
+
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <!-- 实时性能指标 -->
+                <div class="panel">
+                    <h3>📊 实时性能</h3>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <div class="metric-value" id="totalRecognitions">0</div>
+                            <div class="metric-label">总识别次数</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="successRate">0%</div>
+                            <div class="metric-label">成功率</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="avgConfidence">0.0</div>
+                            <div class="metric-label">平均置信度</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="currentFPS">0</div>
+                            <div class="metric-label">当前FPS</div>
+                        </div>
+                    </div>
+                    
+                    <div class="performance-chart">
+                        <div class="chart-bar">
+                            <div class="chart-label">准确率</div>
+                            <div class="chart-progress">
+                                <div class="chart-fill" id="accuracyBar" style="width: 0%"></div>
+                            </div>
+                            <div class="chart-value" id="accuracyValue">0%</div>
+                        </div>
+                        <div class="chart-bar">
+                            <div class="chart-label">精确率</div>
+                            <div class="chart-progress">
+                                <div class="chart-fill" id="precisionBar" style="width: 0%"></div>
+                            </div>
+                            <div class="chart-value" id="precisionValue">0%</div>
+                        </div>
+                        <div class="chart-bar">
+                            <div class="chart-label">召回率</div>
+                            <div class="chart-progress">
+                                <div class="chart-fill" id="recallBar" style="width: 0%"></div>
+                            </div>
+                            <div class="chart-value" id="recallValue">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 识别结果 -->
+                <div class="panel">
+                    <h3>🔍 识别结果</h3>
+                    <div class="results-list" id="resultsList">
+                        <div style="text-align: center; color: #7f8c8d; padding: 20px;">
+                            暂无识别结果
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>检测到商品数量:</span>
+                            <strong id="detectionCount">0</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>预估总价:</span>
+                            <strong style="color: #27ae60;" id="totalPrice">¥0.00</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isStreaming = false;
+        let frameInterval;
+        let metricsInterval;
+        let lastFrameTime = Date.now();
+        let frameCount = 0;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCameraStatus();
+            startMetricsUpdate();
+        });
+
+        // 启动摄像头
+        async function startCamera() {
+            try {
+                const response = await fetch('/api/recognition/camera/start/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ camera_id: 0 })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    isStreaming = true;
+                    updateCameraStatus();
+                    startFrameStream();
+                    
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = false;
+                    
+                    showNotification('摄像头启动成功', 'success');
+                } else {
+                    showNotification('摄像头启动失败: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showNotification('网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 停止摄像头
+        async function stopCamera() {
+            try {
+                const response = await fetch('/api/recognition/camera/stop/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    isStreaming = false;
+                    updateCameraStatus();
+                    stopFrameStream();
+                    
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = true;
+                    
+                    showNotification('摄像头已停止', 'info');
+                } else {
+                    showNotification('摄像头停止失败: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showNotification('网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 开始视频流
+        function startFrameStream() {
+            frameInterval = setInterval(async () => {
+                if (!isStreaming) return;
+                
+                try {
+                    // 获取带检测结果的帧
+                    const response = await fetch('/recognition/frame/detections/');
+                    const data = await response.json();
+                    
+                    if (data.status === 'success' && data.data.frame) {
+                        // 更新视频显示
+                        document.getElementById('videoElement').src = 'data:image/jpeg;base64,' + data.data.frame;
+                        
+                        // 更新识别结果
+                        if (data.data.detections) {
+                            updateRecognitionResults(data.data.detections);
+                        }
+                        
+                        // 计算FPS
+                        frameCount++;
+                        const currentTime = Date.now();
+                        if (currentTime - lastFrameTime >= 1000) {
+                            document.getElementById('currentFPS').textContent = frameCount;
+                            frameCount = 0;
+                            lastFrameTime = currentTime;
+                        }
+                    }
+                } catch (error) {
+                    console.error('获取帧数据失败:', error);
+                }
+            }, 100); // 10 FPS
+        }
+
+        // 停止视频流
+        function stopFrameStream() {
+            if (frameInterval) {
+                clearInterval(frameInterval);
+                frameInterval = null;
+            }
+            document.getElementById('videoElement').src = '';
+        }
+
+        // 拍照识别
+        async function captureFrame() {
+            if (!isStreaming) {
+                showNotification('请先启动摄像头', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/recognition/recognize/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.data.detections) {
+                    updateRecognitionResults(data.data.detections);
+                    showNotification('识别完成', 'success');
+                } else {
+                    showNotification('识别失败: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showNotification('网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 更新识别结果
+        function updateRecognitionResults(detections) {
+            const resultsList = document.getElementById('resultsList');
+            const detectionCount = document.getElementById('detectionCount');
+            const totalPrice = document.getElementById('totalPrice');
+            
+            if (detections.length === 0) {
+                resultsList.innerHTML = `
+                    <div style="text-align: center; color: #7f8c8d; padding: 20px;">
+                        暂无识别结果
+                    </div>
+                `;
+                detectionCount.textContent = '0';
+                totalPrice.textContent = '¥0.00';
+                return;
+            }
+            
+            let total = 0;
+            let html = '';
+            
+            detections.forEach((item, index) => {
+                const price = item.price || 0;
+                total += price;
+                
+                html += `
+                    <div class="result-item">
+                        <div class="result-info">
+                            <div class="result-name">${item.display_name || item.class_name}</div>
+                            <div class="result-confidence">置信度: ${(item.confidence * 100).toFixed(1)}%</div>
+                        </div>
+                        <div class="result-price">¥${price.toFixed(2)}</div>
+                    </div>
+                `;
+            });
+            
+            resultsList.innerHTML = html;
+            detectionCount.textContent = detections.length;
+            totalPrice.textContent = `¥${total.toFixed(2)}`;
+        }
+
+        // 更新摄像头状态
+        async function updateCameraStatus() {
+            try {
+                const response = await fetch('/recognition/camera/status/');
+                const data = await response.json();
+                
+                const statusIndicator = document.getElementById('cameraStatus');
+                const statusText = document.getElementById('statusText');
+                
+                if (data.status === 'success' && data.data.is_running) {
+                    statusIndicator.className = 'status-indicator status-active';
+                    statusText.textContent = '摄像头运行中';
+                } else {
+                    statusIndicator.className = 'status-indicator status-inactive';
+                    statusText.textContent = '摄像头未启动';
+                }
+            } catch (error) {
+                console.error('获取摄像头状态失败:', error);
+            }
+        }
+
+        // 开始性能指标更新
+        function startMetricsUpdate() {
+            metricsInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/recognition/performance/');
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        const metrics = data.data;
+                        
+                        // 更新数值指标
+                        document.getElementById('totalRecognitions').textContent = metrics.total_recognitions || 0;
+                        document.getElementById('successRate').textContent = ((metrics.success_rate || 0) * 100).toFixed(1) + '%';
+                        document.getElementById('avgConfidence').textContent = (metrics.avg_confidence || 0).toFixed(3);
+                        
+                        // 更新性能图表
+                        updatePerformanceBar('accuracyBar', 'accuracyValue', (metrics.accuracy || 0) * 100);
+                        updatePerformanceBar('precisionBar', 'precisionValue', (metrics.precision || 0) * 100);
+                        updatePerformanceBar('recallBar', 'recallValue', (metrics.recall || 0) * 100);
+                    }
+                } catch (error) {
+                    console.error('获取性能指标失败:', error);
+                }
+            }, 2000); // 每2秒更新一次
+        }
+
+        // 更新性能条
+        function updatePerformanceBar(barId, valueId, percentage) {
+            const bar = document.getElementById(barId);
+            const value = document.getElementById(valueId);
+            
+            bar.style.width = percentage.toFixed(1) + '%';
+            value.textContent = percentage.toFixed(1) + '%';
+        }
+
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 6px;
+                color: white;
+                font-weight: 500;
+                z-index: 1000;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+            `;
+            
+            // 设置背景颜色
+            switch (type) {
+                case 'success':
+                    notification.style.background = 'linear-gradient(135deg, #27ae60 0%, #229954 100%)';
+                    break;
+                case 'error':
+                    notification.style.background = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
+                    break;
+                case 'warning':
+                    notification.style.background = 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)';
+                    break;
+                default:
+                    notification.style.background = 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // 显示动画
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // 自动隐藏
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // 获取CSRF Token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', function() {
+            stopFrameStream();
+            if (metricsInterval) {
+                clearInterval(metricsInterval);
+            }
+        });
+    </script>
+</body>
+</html>

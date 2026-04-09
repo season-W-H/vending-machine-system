@@ -1,0 +1,308 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>库存管理</title>
+    <link href="{% static 'rest_framework/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <style>
+        .inventory-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .inventory-card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .inventory-card.low-stock {
+            border-left: 4px solid #ffc107;
+            background-color: rgba(255, 193, 7, 0.05);
+        }
+        .inventory-card.out-of-stock {
+            border-left: 4px solid #dc3545;
+            background-color: rgba(220, 53, 69, 0.05);
+        }
+        .stock-indicator {
+            height: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            background-color: #e9ecef;
+            position: relative;
+            overflow: hidden;
+        }
+        .stock-indicator .stock-level {
+            height: 100%;
+            border-radius: 5px;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        .stock-indicator .stock-level.high {
+            background-color: #28a745;
+        }
+        .stock-indicator .stock-level.medium {
+            background-color: #ffc107;
+        }
+        .stock-indicator .stock-level.low {
+            background-color: #fd7e14;
+        }
+        .stock-indicator .stock-level.critical {
+            background-color: #dc3545;
+        }
+        .stock-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .filter-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .inventory-actions {
+            margin-top: 15px;
+        }
+        .alert {
+            margin-bottom: 20px;
+        }
+        .inventory-chart {
+            margin-top: 20px;
+        }
+        .history-item {
+            border-left: 3px solid #007bff;
+            padding-left: 10px;
+            margin-bottom: 15px;
+        }
+        .history-item.addition {
+            border-left-color: #28a745;
+        }
+        .history-item.subtraction {
+            border-left-color: #dc3545;
+        }
+        .pagination-container {
+            margin-top: 20px;
+        }
+        .stock-threshold {
+            margin-top: 5px;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12 mb-3">
+                <h1>库存管理</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">首页</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">库存管理</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div id="inventory-alerts-container">
+                    <!-- 库存预警将在这里动态加载 -->
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="filter-section">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="inventory-status-filter" class="form-label">库存状态</label>
+                            <select class="form-select" id="inventory-status-filter">
+                                <option value="">全部状态</option>
+                                <option value="in_stock">库存充足</option>
+                                <option value="low_stock">库存不足</option>
+                                <option value="out_of_stock">缺货</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="category-filter" class="form-label">商品类别</label>
+                            <select class="form-select" id="category-filter">
+                                <option value="">全部类别</option>
+                                <!-- 类别选项将在这里动态加载 -->
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button id="apply-filters-btn" class="btn btn-primary" style="margin-right: 10px;">应用筛选</button>
+                            <button id="reset-filters-btn" class="btn btn-outline-secondary">重置</button>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <a href="/products/recognition/" class="btn btn-success w-100">返回识别</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-9">
+                <div id="inventory-container" class="mb-4">
+                    <!-- 库存列表将在这里动态加载 -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                        <p class="mt-3">正在加载库存数据...</p>
+                    </div>
+                </div>
+
+                <div id="pagination-container" class="pagination-container d-flex justify-content-center">
+                    <!-- 分页控件将在这里动态加载 -->
+                </div>
+            </div>
+
+            <div class="col-lg-3">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>库存统计</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h3 class="text-primary" id="total-products-count">-</h3>
+                                <p class="text-muted">商品种类</p>
+                            </div>
+                            <div class="col-6">
+                                <h3 class="text-success" id="total-items-count">-</h3>
+                                <p class="text-muted">总库存量</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h3 class="text-warning" id="low-stock-count">-</h3>
+                                <p class="text-muted">库存不足</p>
+                            </div>
+                            <div class="col-6">
+                                <h3 class="text-danger" id="out-of-stock-count">-</h3>
+                                <p class="text-muted">缺货</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>库存操作</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-xs-12" style="margin-bottom: 10px;">
+                                <button id="add-stock-btn" class="btn btn-primary btn-block">添加库存</button>
+                            </div>
+                            <div class="col-xs-12" style="margin-bottom: 10px;">
+                                <button id="adjust-stock-btn" class="btn btn-default btn-block">调整库存</button>
+                            </div>
+                            <div class="col-xs-12" style="margin-bottom: 10px;">
+                                <button id="set-threshold-btn" class="btn btn-warning btn-block">设置预警阈值</button>
+                            </div>
+                            <div class="col-xs-12">
+                                <button id="refresh-inventory-btn" class="btn btn-success btn-block">刷新数据</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>最近操作</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-operations-container">
+                            <!-- 最近操作将在这里动态加载 -->
+                            <div class="text-center py-3">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">加载中...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 库存详情模态框 -->
+    <div class="modal fade" id="inventoryDetailModal" tabindex="-1" aria-labelledby="inventoryDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="inventoryDetailModalLabel">库存详情</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div id="inventory-detail-content">
+                        <!-- 库存详情内容将在这里动态加载 -->
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 库存操作模态框 -->
+    <div class="modal fade" id="stockOperationModal" tabindex="-1" aria-labelledby="stockOperationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="stockOperationModalLabel">库存操作</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <form id="stock-operation-form">
+                        <div class="mb-3">
+                            <label for="operation-product" class="form-label">商品</label>
+                            <select class="form-select" id="operation-product" required>
+                                <!-- 商品选项将在这里动态加载 -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="operation-type" class="form-label">操作类型</label>
+                            <select class="form-select" id="operation-type" required>
+                                <option value="add">添加库存</option>
+                                <option value="subtract">减少库存</option>
+                                <option value="set">设置库存</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="operation-quantity" class="form-label">数量</label>
+                            <input type="number" class="form-control" id="operation-quantity" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="operation-reason" class="form-label">操作原因</label>
+                            <textarea class="form-control" id="operation-reason" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="button" id="confirm-operation-btn" class="btn btn-primary">确认操作</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'rest_framework/js/jquery-3.7.1.min.js' %}"></script>
+    <script src="{% static 'rest_framework/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'js/inventory.js' %}"></script>
+</body>
+</html>

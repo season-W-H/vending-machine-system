@@ -1,0 +1,48 @@
+{
+  "processing_mode": "accurate",
+  "yolov8_enabled": true,
+  "sam_enabled": true,
+  "mask_rcnn_enabled": true,
+  "traditional_enabled": true,
+  
+  "performance_settings": {
+    "confidence_threshold": 0.5,
+    "iou_threshold": 0.45,
+    "max_products_per_image": 10,
+    "batch_size": 8,
+    "image_size": 640,
+    "enable_optimization": true,
+    "enable_caching": true
+  },
+  
+  "model_settings": {
+    "yolov8": {
+      "model_path": null,
+      "model_type": "yolov8n.pt",
+      "auto_load": false
+    },
+    "sam": {
+      "model_type": "vit_b",
+      "auto_load": false
+    },
+    "mask_rcnn": {
+      "implementation": "auto",
+      "auto_load": false
+    }
+  },
+  
+  "output_settings": {
+    "enable_segmentation": true,
+    "enable_visualization": true,
+    "output_format": "json",
+    "save_results": false,
+    "output_directory": "results"
+  },
+  
+  "logging_settings": {
+    "level": "INFO",
+    "enable_file_logging": true,
+    "log_directory": "logs",
+    "log_format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  }
+}

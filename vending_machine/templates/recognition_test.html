@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品识别测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        warning: '#FF7D00',
+                        error: '#F53F3F',
+                        info: '#86909C'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .backdrop-blur-xs {
+                backdrop-filter: blur(2px);
+            }
+            .shadow-inner-custom {
+                box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-inter text-gray-800">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="mb-8">
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-gray-800 mb-2">商品识别测试系统</h1>
+            <p class="text-gray-600">基于AI的自动售货机商品识别演示</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧：摄像头和控制区域 -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- 摄像头显示区域 -->
+                <div class="bg-gray-900 rounded-xl overflow-hidden shadow-lg relative">
+                    <!-- 摄像头画面 -->
+                    <div class="aspect-video w-full bg-black relative">
+                        <img id="camera-feed" class="w-full h-full object-cover" alt="摄像头画面">
+                        <div id="camera-placeholder" class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-center text-white">
+                                <i class="fa fa-video-camera text-5xl mb-4 text-gray-500"></i>
+                                <p class="text-gray-400">请开启摄像头</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 识别状态显示 -->
+                        <div id="recognition-status" class="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-xs text-white py-2 px-4 rounded-lg hidden">
+                            <div class="flex items-center">
+                                <i class="fa fa-eye text-primary mr-2"></i>
+                                <span id="status-message">正在识别商品...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 摄像头控制按钮 -->
+                    <div class="bg-gray-800 p-4 flex flex-wrap gap-3">
+                        <button id="camera-toggle-btn" class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg flex items-center transition-all">
+                            <i class="fa fa-video-camera mr-2"></i>
+                            <span>启动摄像头</span>
+                        </button>
+                        
+                        <button id="refresh-camera-btn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg flex items-center transition-all">
+                            <i class="fa fa-refresh mr-2"></i>
+                            <span>刷新</span>
+                        </button>
+                        
+                        <button id="capture-image-btn" class="px-4 py-2 bg-success hover:bg-success/90 text-white rounded-lg flex items-center transition-all">
+                            <i class="fa fa-camera mr-2"></i>
+                            <span>捕获识别</span>
+                        </button>
+                        
+                        <button id="toggle-fullscreen-btn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg flex items-center transition-all">
+                            <i class="fa fa-expand mr-2"></i>
+                            <span>全屏</span>
+                        </button>
+                        
+                        <div class="ml-auto flex gap-3">
+                            <button id="start-recognition-btn" class="px-4 py-2 bg-warning hover:bg-warning/90 text-white rounded-lg flex items-center transition-all opacity-50" disabled>
+                                <i class="fa fa-play mr-2"></i>
+                                <span>开始识别</span>
+                            </button>
+                            
+                            <button id="stop-recognition-btn" class="px-4 py-2 bg-error hover:bg-error/90 text-white rounded-lg flex items-center transition-all opacity-50" disabled>
+                                <i class="fa fa-stop mr-2"></i>
+                                <span>停止识别</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 识别过程容器 -->
+                <div id="recognition-process-container" class="bg-white rounded-xl p-6 shadow-md">
+                    <h3 class="text-lg font-semibold mb-4">商品识别过程</h3>
+                    
+                    <!-- 设备ID -->
+                    <div class="mb-4 text-sm text-gray-500">
+                        设备ID: <span id="device-id">VM-TEST-001</span>
+                    </div>
+                    
+                    <!-- 识别步骤 -->
+                    <div class="space-y-4">
+                        <!-- 步骤1: 图像捕获 -->
+                        <div class="flex gap-4">
+                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                <i class="fa fa-circle-o text-gray-400"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center">
+                                    <p class="font-medium">图像捕获</p>
+                                    <div class="text-sm text-gray-500">
+                                        <i class="fa fa-clock-o mr-1"></i>
+                                        <span>--:--:--</span>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-500 mt-1" id="step1-message">等待开始识别</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 步骤2: 商品识别 -->
+                        <div class="flex gap-4">
+                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                <i class="fa fa-circle-o text-gray-400"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center">
+                                    <p class="font-medium">商品识别</p>
+                                    <div class="text-sm text-gray-500">
+                                        <i class="fa fa-clock-o mr-1"></i>
+                                        <span>--:--:--</span>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-500 mt-1" id="step2-message">等待开始识别</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 步骤3: 价格计算 -->
+                        <div class="flex gap-4">
+                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                <i class="fa fa-circle-o text-gray-400"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center">
+                                    <p class="font-medium">价格计算</p>
+                                    <div class="text-sm text-gray-500">
+                                        <i class="fa fa-clock-o mr-1"></i>
+                                        <span>--:--:--</span>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-500 mt-1" id="step3-message">等待开始识别</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧：识别结果和操作区域 -->
+            <div class="space-y-6">
+                <!-- 识别结果展示 -->
+                <div class="bg-white rounded-xl p-6 shadow-md">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fa fa-shopping-basket text-primary mr-2"></i>
+                        识别商品详情
+                    </h3>
+                    
+                    <div id="recognition-results" class="space-y-4">
+                        <!-- 初始提示 -->
+                        <div class="text-center py-12 text-gray-500">
+                            <i class="fa fa-search text-4xl mb-4 text-gray-300"></i>
+                            <p>开始识别后将显示商品信息</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 系统状态 -->
+                <div class="bg-white rounded-xl p-6 shadow-md">
+                    <h3 class="text-lg font-semibold mb-4">系统状态</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center pb-2 border-b">
+                            <span class="flex items-center">
+                                <i class="fa fa-snowflake-o text-primary mr-2"></i>
+                                制冷系统
+                            </span>
+                            <span class="px-2 py-1 bg-success/10 text-success text-xs rounded">正常</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center pb-2 border-b">
+                            <span class="flex items-center">
+                                <i class="fa fa-bolt text-primary mr-2"></i>
+                                电源系统
+                            </span>
+                            <span class="px-2 py-1 bg-success/10 text-success text-xs rounded">正常</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center pb-2 border-b">
+                            <span class="flex items-center">
+                                <i class="fa fa-wifi text-primary mr-2"></i>
+                                网络连接
+                            </span>
+                            <span class="px-2 py-1 bg-success/10 text-success text-xs rounded">正常</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center pb-2 border-b">
+                            <span class="flex items-center">
+                                <i class="fa fa-camera text-primary mr-2"></i>
+                                摄像头
+                            </span>
+                            <span id="camera-status" class="px-2 py-1 bg-error/10 text-error text-xs rounded">未激活</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center pb-2 border-b">
+                            <span class="flex items-center">
+                                <i class="fa fa-tint text-primary mr-2"></i>
+                                制冷剂
+                            </span>
+                            <span class="px-2 py-1 bg-warning/10 text-warning text-xs rounded">85%</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="flex items-center">
+                                <i class="fa fa-thermometer-half text-primary mr-2"></i>
+                                内部温度
+                            </span>
+                            <span class="px-2 py-1 bg-success/10 text-success text-xs rounded">4°C</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="bg-white rounded-xl p-6 shadow-md">
+                    <h3 class="text-lg font-semibold mb-4">操作</h3>
+                    
+                    <button id="confirm-order-btn" class="w-full py-3 bg-primary hover:bg-primary/90 text-white rounded-lg flex items-center justify-center transition-all mb-3 opacity-50" disabled>
+                        <i class="fa fa-check-circle mr-2"></i>
+                        <span>确认订单</span>
+                    </button>
+                    
+                    <button id="clear-results-btn" class="w-full py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg flex items-center justify-center transition-all">
+                        <i class="fa fa-refresh mr-2"></i>
+                        <span>清除结果</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 通知组件 -->
+    <div id="notification" class="fixed top-4 right-4 max-w-md bg-white rounded-lg shadow-lg p-4 transform transition-all duration-300 translate-y-[-100px] opacity-0 z-50">
+        <div class="flex items-start gap-3">
+            <div id="notification-icon" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10">
+                <i class="fa fa-info text-primary"></i>
+            </div>
+            <div class="flex-1">
+                <p id="notification-message" class="text-gray-700"></p>
+            </div>
+            <button id="close-notification" class="text-gray-400 hover:text-gray-600">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- 引入识别系统JS -->
+    <!-- 识别系统功能已通过内联JavaScript实现 -->
+    
+    <!-- 测试页面专用脚本 -->
+    <script>
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('商品识别测试页面加载完成');
+            
+            // 识别系统已在页面末尾通过内联JavaScript初始化
+            
+            // 添加清除结果按钮事件
+            const clearResultsBtn = document.getElementById('clear-results-btn');
+            if (clearResultsBtn) {
+                clearResultsBtn.addEventListener('click', function() {
+                    const resultsContainer = document.getElementById('recognition-results');
+                    if (resultsContainer) {
+                        resultsContainer.innerHTML = `
+                            <div class="text-center py-12 text-gray-500">
+                                <i class="fa fa-search text-4xl mb-4 text-gray-300"></i>
+                                <p>开始识别后将显示商品信息</p>
+                            </div>
+                        `;
+                    }
+                    showNotification('已清除识别结果', 'info');
+                });
+            }
+            
+            // 添加确认订单按钮事件
+            const confirmOrderBtn = document.getElementById('confirm-order-btn');
+            if (confirmOrderBtn) {
+                confirmOrderBtn.addEventListener('click', function() {
+                    showNotification('订单确认功能开发中', 'warning');
+                });
+            }
+            
+            // 监听识别状态变化
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList' || mutation.type === 'subtree') {
+                        const resultsContainer = document.getElementById('recognition-results');
+                        const confirmOrderBtn = document.getElementById('confirm-order-btn');
+                        
+                        if (resultsContainer && confirmOrderBtn) {
+                            // 检查是否有识别结果
+                            const hasResults = resultsContainer.querySelector('.space-y-2') !== null;
+                            
+                            // 更新按钮状态
+                            if (hasResults) {
+                                confirmOrderBtn.disabled = false;
+                                confirmOrderBtn.classList.remove('opacity-50');
+                            } else {
+                                confirmOrderBtn.disabled = true;
+                                confirmOrderBtn.classList.add('opacity-50');
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // 开始观察结果容器
+            const resultsContainer = document.getElementById('recognition-results');
+            if (resultsContainer) {
+                observer.observe(resultsContainer, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+            
+            // 监听摄像头状态变化，更新UI
+            window.addEventListener('cameraStatusChanged', function(event) {
+                const cameraStatus = document.getElementById('camera-status');
+                if (cameraStatus) {
+                    if (event.detail.isActive) {
+                        cameraStatus.className = 'px-2 py-1 bg-success/10 text-success text-xs rounded';
+                        cameraStatus.textContent = '正常';
+                    } else {
+                        cameraStatus.className = 'px-2 py-1 bg-error/10 text-error text-xs rounded';
+                        cameraStatus.textContent = '未激活';
+                    }
+                }
+            });
+        });
+        
+        // 识别系统前端功能
+        // 通知功能
+        function showNotification(message, type = 'info') {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type} fixed top-4 right-4 px-4 py-2 rounded-lg text-white font-medium z-50 shadow-lg`;
+            notification.textContent = message;
+            
+            // 设置不同类型的背景色
+            const typeColors = {
+                info: 'bg-blue-500',
+                success: 'bg-green-500',
+                warning: 'bg-yellow-500',
+                error: 'bg-red-500'
+            };
+            notification.classList.add(typeColors[type] || typeColors.info);
+            
+            // 添加到页面
+            document.body.appendChild(notification);
+            
+            // 自动消失
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // 摄像头控制
+        class CameraSystem {
+            constructor(videoElementId) {
+                this.videoElement = document.getElementById(videoElementId);
+                this.stream = null;
+                // 初始化transactionStatusElement
+                this.transactionStatusElement = document.getElementById('transaction-status');
+            }
+            
+            async startCamera() {
+                try {
+                    // 更新交易状态
+                    if (this.transactionStatusElement) {
+                        this.transactionStatusElement.textContent = '正在启动摄像头...';
+                    }
+                    
+                    // 如果有静态图片元素，隐藏它
+                    if (this.staticImageElement) {
+                        this.staticImageElement.style.display = 'none';
+                    }
+                    
+                    // 显示视频元素
+                    this.videoElement.style.display = 'block';
+                    
+                    this.stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    this.videoElement.srcObject = this.stream;
+                    showNotification('摄像头已启动', 'success');
+                    return true;
+                } catch (error) {
+                    console.error('启动摄像头失败:', error);
+                    showNotification('无法访问摄像头，请检查权限设置', 'error');
+                    // 确保错误消息不会显示undefined变量
+                    const errorMsg = error.message || '未知错误';
+                    console.error('启动摄像头失败:', errorMsg);
+                    return false;
+                }
+            }
+            
+            stopCamera() {
+                if (this.stream) {
+                    try {
+                        // 先捕获当前画面作为静态图片
+                        const lastFrame = this.captureImage();
+                        
+                        // 停止所有轨道
+                        this.stream.getTracks().forEach(track => track.stop());
+                        this.videoElement.srcObject = null;
+                        this.stream = null;
+                        
+                        // 创建一个新的图片元素来显示捕获的帧
+                        if (!this.staticImageElement) {
+                            this.staticImageElement = document.createElement('img');
+                            this.staticImageElement.className = 'w-full h-full object-cover absolute inset-0';
+                            this.videoElement.parentNode.appendChild(this.staticImageElement);
+                        }
+                        
+                        // 设置图片源
+                        this.staticImageElement.src = lastFrame;
+                        
+                        // 隐藏视频元素，显示图片
+                        this.videoElement.style.display = 'none';
+                        this.staticImageElement.style.display = 'block';
+                        
+                        showNotification('摄像头已关闭，显示最后捕获的画面', 'info');
+                    } catch (error) {
+                        console.error('关闭摄像头并显示图片时出错:', error);
+                        showNotification('无法显示捕获的画面', 'warning');
+                    }
+                }
+            }
+            
+            captureImage() {
+                const canvas = document.createElement('canvas');
+                canvas.width = this.videoElement.videoWidth;
+                canvas.height = this.videoElement.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(this.videoElement, 0, 0, canvas.width, canvas.height);
+                return canvas.toDataURL('image/jpeg');
+            }
+        }
+        
+        // 识别系统主类
+        class RecognitionSystem {
+            constructor() {
+                this.camera = null;
+                this.isRecognizing = false;
+                this.lastRecognitionTime = 0;
+                this.recognitionInterval = null;
+            }
+            
+            init() {
+                // 初始化摄像头系统
+                this.videoElement = document.createElement('video');
+                this.videoElement.id = 'videoElement';
+                this.videoElement.className = 'w-full h-full object-cover';
+                this.videoElement.autoplay = true;
+                this.videoElement.playsInline = true;
+                
+                // 替换摄像头图片
+                const cameraFeed = document.getElementById('camera-feed');
+                if (cameraFeed) {
+                    const parent = cameraFeed.parentNode;
+                    parent.replaceChild(this.videoElement, cameraFeed);
+                }
+                
+                this.camera = new CameraSystem('videoElement');
+                
+                // 绑定事件处理
+                this.bindEvents();
+                
+                showNotification('识别系统已初始化', 'success');
+            }
+            
+            bindEvents() {
+                // 绑定摄像头切换按钮
+                const cameraToggleBtn = document.getElementById('camera-toggle-btn');
+                if (cameraToggleBtn) {
+                    cameraToggleBtn.addEventListener('click', async () => {
+                        if (!this.camera) return;
+                        
+                        const cameraPlaceholder = document.getElementById('camera-placeholder');
+                        const startBtn = document.getElementById('start-recognition-btn');
+                        const stopBtn = document.getElementById('stop-recognition-btn');
+                        
+                        if (this.camera.stream) {
+                            this.camera.stopCamera();
+                            if (cameraPlaceholder) cameraPlaceholder.classList.remove('hidden');
+                            if (startBtn) {
+                                startBtn.disabled = true;
+                                startBtn.classList.add('opacity-50');
+                            }
+                            if (stopBtn) {
+                                stopBtn.disabled = true;
+                                stopBtn.classList.add('opacity-50');
+                            }
+                            cameraToggleBtn.innerHTML = '<i class="fa fa-video-camera mr-2"></i><span>启动摄像头</span>';
+                        } else {
+                            const success = await this.camera.startCamera();
+                            if (success) {
+                                if (cameraPlaceholder) cameraPlaceholder.classList.add('hidden');
+                                if (startBtn) {
+                                    startBtn.disabled = false;
+                                    startBtn.classList.remove('opacity-50');
+                                }
+                                cameraToggleBtn.innerHTML = '<i class="fa fa-video-camera mr-2"></i><span>关闭摄像头</span>';
+                            }
+                        }
+                    });
+                }
+                
+                // 绑定开始识别按钮
+                const startBtn = document.getElementById('start-recognition-btn');
+                if (startBtn) {
+                    startBtn.addEventListener('click', () => this.startRecognition());
+                }
+                
+                // 绑定停止识别按钮
+                const stopBtn = document.getElementById('stop-recognition-btn');
+                if (stopBtn) {
+                    stopBtn.addEventListener('click', () => this.stopRecognition());
+                }
+                
+                // 绑定手动识别按钮
+                const captureBtn = document.getElementById('capture-image-btn');
+                if (captureBtn) {
+                    captureBtn.addEventListener('click', () => this.recognizeSingleImage());
+                }
+            }
+            
+            startRecognition() {
+                if (!this.camera || !this.camera.stream) {
+                    showNotification('请先启动摄像头', 'warning');
+                    return;
+                }
+                
+                this.isRecognizing = true;
+                
+                // 更新按钮状态
+                const startBtn = document.getElementById('start-recognition-btn');
+                const stopBtn = document.getElementById('stop-recognition-btn');
+                const cameraToggleBtn = document.getElementById('camera-toggle-btn');
+                
+                if (startBtn) {
+                    startBtn.disabled = true;
+                    startBtn.classList.add('opacity-50');
+                }
+                if (stopBtn) {
+                    stopBtn.disabled = false;
+                    stopBtn.classList.remove('opacity-50');
+                }
+                if (cameraToggleBtn) {
+                    cameraToggleBtn.disabled = true;
+                    cameraToggleBtn.classList.add('opacity-50');
+                }
+                
+                // 显示识别状态
+                const recognitionStatus = document.getElementById('recognition-status');
+                const statusMessage = document.getElementById('status-message');
+                if (recognitionStatus) recognitionStatus.classList.remove('hidden');
+                if (statusMessage) statusMessage.textContent = '正在识别商品...';
+                
+                showNotification('开始自动识别...', 'info');
+                
+                // 设置定期识别
+                this.recognitionInterval = setInterval(() => {
+                    const now = Date.now();
+                    if (now - this.lastRecognitionTime > 2000) {
+                        this.recognizeSingleImage();
+                        this.lastRecognitionTime = now;
+                    }
+                }, 1000);
+            }
+            
+            stopRecognition() {
+                this.isRecognizing = false;
+                
+                if (this.recognitionInterval) {
+                    clearInterval(this.recognitionInterval);
+                    this.recognitionInterval = null;
+                }
+                
+                // 更新按钮状态
+                const startBtn = document.getElementById('start-recognition-btn');
+                const stopBtn = document.getElementById('stop-recognition-btn');
+                const cameraToggleBtn = document.getElementById('camera-toggle-btn');
+                
+                if (startBtn) {
+                    startBtn.disabled = false;
+                    startBtn.classList.remove('opacity-50');
+                }
+                if (stopBtn) {
+                    stopBtn.disabled = true;
+                    stopBtn.classList.add('opacity-50');
+                }
+                if (cameraToggleBtn) {
+                    cameraToggleBtn.disabled = false;
+                    cameraToggleBtn.classList.remove('opacity-50');
+                }
+                
+                // 隐藏识别状态
+                const recognitionStatus = document.getElementById('recognition-status');
+                if (recognitionStatus) recognitionStatus.classList.add('hidden');
+                
+                showNotification('已停止识别', 'info');
+            }
+            
+            recognizeSingleImage() {
+                if (!this.camera || !this.camera.stream) {
+                    showNotification('请先启动摄像头', 'warning');
+                    return;
+                }
+                
+                try {
+                    // 捕获图像
+                    const imageData = this.camera.captureImage();
+                    
+                    // 显示正在识别的状态
+                    const statusMessage = document.getElementById('status-message');
+                    if (statusMessage) {
+                        statusMessage.textContent = '正在识别...';
+                    }
+                    
+                    // 模拟识别结果
+                    setTimeout(() => {
+                        this.handleRecognitionResult({
+                            success: true,
+                            products: [
+                                { name: '可口可乐 330ml', confidence: 0.95 },
+                                { name: '乐事薯片 原味', confidence: 0.87 },
+                                { name: '德芙巧克力', confidence: 0.75 }
+                            ],
+                            image_url: imageData
+                        });
+                    }, 800);
+                    
+                } catch (error) {
+                    console.error('识别失败:', error);
+                    showNotification('识别过程中发生错误', 'error');
+                }
+            }
+            
+            handleRecognitionResult(result) {
+                // 更新识别状态
+                const statusMessage = document.getElementById('status-message');
+                if (statusMessage) {
+                    statusMessage.textContent = result.success ? '识别完成' : '识别失败';
+                }
+                
+                // 更新结果显示
+                this.updateRecognitionResults(result.products);
+                
+                // 显示识别成功通知
+                if (result.success) {
+                    showNotification(`成功识别到 ${result.products.length} 个商品`, 'success');
+                } else {
+                    showNotification('未识别到任何商品', 'warning');
+                }
+            }
+            
+            updateRecognitionResults(products) {
+                const resultsContainer = document.getElementById('recognition-results');
+                if (!resultsContainer) return;
+                
+                // 清空之前的结果
+                resultsContainer.innerHTML = '';
+                
+                if (products.length === 0) {
+                    resultsContainer.innerHTML = '<div class="text-center text-gray-500 py-4">未识别到任何商品</div>';
+                    return;
+                }
+                
+                // 创建结果列表
+                products.forEach(product => {
+                    const productItem = document.createElement('div');
+                    productItem.className = 'bg-white rounded-lg shadow p-4 mb-3 transition-all hover:shadow-md';
+                    
+                    productItem.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-semibold text-gray-800">${product.name}</h4>
+                            <span class="text-sm text-green-600">${(product.confidence * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-500 h-2 rounded-full transition-all duration-500" style="width: ${(product.confidence * 100).toFixed(0)}%"></div>
+                        </div>
+                    `;
+                    
+                    resultsContainer.appendChild(productItem);
+                });
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 延迟初始化，确保页面完全加载
+            setTimeout(() => {
+                window.recognitionSystem = new RecognitionSystem();
+                window.recognitionSystem.init();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# YOLOv8 商品识别数据集配置
+
+path: d:\SmartUVM_Datasets\UVM_Datasets\divide\divide  # 数据集根目录
+train: train  # 训练集目录
+val: test  # 验证集目录
+
+# 类别名称
+names:
+  0: bss  # 百岁山
+  1: fd   # 芬达
+  2: jdb  # 加多宝
+  3: ksfh # 康师傅红茶
+  4: llds # 维他命水
+  5: md   # 脉动
+  6: mzy  # 美汁源
+  7: tycl # 统一阿萨姆（绿茶）
+  8: tyyc # 统一阿萨姆（原味）
+  9: yykx # 营养快线

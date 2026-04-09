@@ -1,0 +1,3404 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自动售卖机后台管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="{% static 'js/chart.umd.min.js' %}"></script>
+    <script>
+        // Tailwind配置
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36BFFA',
+                        success: '#00B42A',
+                        warning: '#FF7D00',
+                        danger: '#F53F3F',
+                        dark: '#1D2129',
+                        'dark-2': '#4E5969',
+                        'light-bg': '#F2F3F5',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        /* Tailwind CSS 配置 - 使用 @layer 和 @apply 规则 */
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .sidebar-item-active {
+                background-color: rgba(22, 93, 255, 0.1);
+                color: #165DFF;
+                border-left-width: 4px;
+                border-left-color: #165DFF;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                transition: box-shadow 300ms ease-in-out;
+            }
+            .card-shadow:hover {
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+            .scrollbar-hidden {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            .scrollbar-hidden::-webkit-scrollbar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light-bg font-inter text-dark h-screen flex overflow-hidden">
+    <!-- 左侧任务栏 -->
+    <aside class="w-64 bg-white shadow-md h-full flex-shrink-0 overflow-y-auto scrollbar-hidden">
+        <div class="p-4 border-b border-gray-200">
+            <h1 class="text-2xl font-bold text-primary flex items-center">
+                <i class="fa fa-cubes mr-2"></i>
+                <span>自动售卖机管理</span>
+            </h1>
+        </div>
+        
+        <nav class="mt-5 px-2">
+            <div class="mb-2 px-3 text-xs font-semibold text-dark-2 uppercase tracking-wider">
+                主菜单
+            </div>
+            
+            <!-- 导航项 -->
+            <a href="#dashboard" id="nav-dashboard" class="sidebar-item-active flex items-center px-3 py-3 text-sm font-medium rounded-md mb-1 cursor-pointer">
+                <i class="fa fa-dashboard w-5 h-5 mr-3 text-center"></i>
+                <span>总览仪表盘</span>
+            </a>
+            
+            <a href="#camera" id="nav-camera" class="flex items-center px-3 py-3 text-sm font-medium text-dark-2 hover:bg-gray-100 rounded-md mb-1 transition-colors cursor-pointer">
+                <i class="fa fa-video-camera w-5 h-5 mr-3 text-center"></i>
+                <span>摄像头监控</span>
+            </a>
+            
+            <a href="#orders" id="nav-orders" class="flex items-center px-3 py-3 text-sm font-medium text-dark-2 hover:bg-gray-100 rounded-md mb-1 transition-colors cursor-pointer">
+                <i class="fa fa-shopping-cart w-5 h-5 mr-3 text-center"></i>
+                <span>订单管理</span>
+            </a>
+            
+            <a href="#products" id="nav-products" class="flex items-center px-3 py-3 text-sm font-medium text-dark-2 hover:bg-gray-100 rounded-md mb-1 transition-colors cursor-pointer">
+                <i class="fa fa-list w-5 h-5 mr-3 text-center"></i>
+                <span>商品管理</span>
+            </a>
+            
+            <a href="#inventory" id="nav-inventory" class="flex items-center px-3 py-3 text-sm font-medium text-dark-2 hover:bg-gray-100 rounded-md mb-1 transition-colors cursor-pointer">
+                <i class="fa fa-archive w-5 h-5 mr-3 text-center"></i>
+                <span>库存管理</span>
+            </a>
+            
+            <a href="#payment" id="nav-payment" class="flex items-center px-3 py-3 text-sm font-medium text-dark-2 hover:bg-gray-100 rounded-md mb-1 transition-colors cursor-pointer">
+                <i class="fa fa-credit-card w-5 h-5 mr-3 text-center"></i>
+                <span>支付管理</span>
+            </a>
+            
+            <div class="mt-6 mb-2 px-3 text-xs font-semibold text-dark-2 uppercase tracking-wider">
+                系统设置
+            </div>
+            
+            <a href="#settings" id="nav-settings" class="flex items-center px-3 py-3 text-sm font-medium text-dark-2 hover:bg-gray-100 rounded-md mb-1 transition-colors cursor-pointer">
+                <i class="fa fa-cog w-5 h-5 mr-3 text-center"></i>
+                <span>系统设置</span>
+            </a>
+            
+            <a href="#users" id="nav-users" class="flex items-center px-3 py-3 text-sm font-medium text-dark-2 hover:bg-gray-100 rounded-md mb-1 transition-colors cursor-pointer">
+                <i class="fa fa-users w-5 h-5 mr-3 text-center"></i>
+                <span>用户管理</span>
+            </a>
+            
+            <a href="#help" id="nav-help" class="flex items-center px-3 py-3 text-sm font-medium text-dark-2 hover:bg-gray-100 rounded-md mb-1 transition-colors cursor-pointer">
+                <i class="fa fa-question-circle w-5 h-5 mr-3 text-center"></i>
+                <span>帮助中心</span>
+            </a>
+        </nav>
+        
+        <!-- 底部信息 -->
+        <div class="absolute bottom-0 left-0 w-64 p-4 border-t border-gray-200">
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
+        <i class="fa fa-user"></i>
+    </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium">管理员</p>
+                    <p class="text-xs text-dark-2">超级管理员</p>
+                </div>
+                <button class="ml-auto text-dark-2 hover:text-danger transition-colors" id="logout-btn">
+                    <i class="fa fa-sign-out"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- 主内容区域 -->
+    <main class="flex-1 overflow-y-auto p-6">
+        <!-- 顶部导航栏 -->
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark">自动售卖机实时监控</h2>
+                <p class="text-dark-2 mt-1">监控售卖机运行状态、摄像头画面和交易处理</p>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- 日期显示 -->
+                <div class="bg-white rounded-lg px-4 py-2 card-shadow">
+                    <p class="text-sm font-medium" id="current-date">2023年10月15日</p>
+                    <p class="text-xs text-dark-2" id="current-time">14:30:25</p>
+                </div>
+                
+                <!-- 通知按钮 -->
+                <button class="relative w-10 h-10 rounded-full bg-white flex items-center justify-center card-shadow" id="notification-btn">
+                    <i class="fa fa-bell text-dark-2"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full"></span>
+                </button>
+                
+                <!-- 刷新按钮 -->
+                <button class="w-10 h-10 rounded-full bg-white flex items-center justify-center card-shadow" id="refresh-btn">
+                    <i class="fa fa-refresh text-dark-2"></i>
+                </button>
+            </div>
+        </header>
+        
+        <!-- 状态卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <!-- 运行状态 -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-dark-2 text-sm">运行状态</p>
+                        <h3 class="text-2xl font-bold mt-2 flex items-center">
+                            正常运行
+                            <span class="ml-2 w-3 h-3 bg-success rounded-full animate-pulse"></span>
+                        </h3>
+                        <p class="text-xs text-dark-2 mt-2">最后更新: 刚刚</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <i class="fa fa-check-circle text-primary text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 当前交易 -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-dark-2 text-sm">当前交易</p>
+                        <h3 class="text-2xl font-bold mt-2" id="current-transaction-status">-</h3>
+                        <p class="text-xs text-dark-2 mt-2" id="current-transaction-order">暂无交易</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
+                        <i class="fa fa-clock-o text-warning text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 今日销售额 -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-dark-2 text-sm">今日销售额</p>
+                        <h3 class="text-2xl font-bold mt-2" id="today-sales">¥0.00</h3>
+                        <p class="text-xs text-success mt-2 flex items-center" id="today-sales-growth">
+                            <i class="fa fa-arrow-up mr-1"></i>
+                            较昨日增长 0%
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                        <i class="fa fa-line-chart text-success text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 今日订单数 -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-dark-2 text-sm">今日订单数</p>
+                        <h3 class="text-2xl font-bold mt-2" id="today-orders">0</h3>
+                        <p class="text-xs text-success mt-2 flex items-center" id="today-orders-growth">
+                            <i class="fa fa-arrow-up mr-1"></i>
+                            较昨日增长 0%
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center">
+                        <i class="fa fa-shopping-bag text-secondary text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主要内容区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 摄像头画面和判定过程 -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- 摄像头画面 -->
+                <div class="bg-white rounded-xl p-6 card-shadow">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">摄像头画面</h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs px-2 py-1 rounded-full bg-success/10 text-success">
+                                <i class="fa fa-circle text-xs mr-1"></i>实时
+                            </span>
+                            <button class="text-dark-2 hover:text-primary transition-colors" id="expand-camera-btn">
+                                <i class="fa fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 视频区域 -->
+                        <div class="relative bg-gray-900 rounded-lg overflow-hidden">
+                            <!-- 使用video标签替代img标签来显示摄像头画面 -->
+                            <video id="camera-feed" autoplay muted playsinline class="w-full h-auto object-cover"></video>
+                            
+                            <!-- 当摄像头未开启时显示的占位符 -->
+                            <div id="camera-placeholder" class="absolute inset-0 flex items-center justify-center bg-gray-800">
+                                <div class="text-center">
+                                    <i class="fa fa-video-camera text-white text-5xl mb-4"></i>
+                                    <p class="text-white">点击下方按钮开启摄像头</p>
+                                </div>
+                            </div>
+                            
+                            <!-- 画面状态指示器 -->
+                            <div class="absolute top-4 left-4 bg-black/50 text-white text-xs px-2 py-1 rounded-md flex items-center">
+                                <i class="fa fa-circle text-warning mr-1 animate-pulse"></i>
+                                <span>等待开启</span>
+                            </div>
+                            
+                            <!-- 摄像头控制按钮 -->
+                            <div class="absolute bottom-4 right-4 flex space-x-2">
+                                <button class="w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-primary transition-colors" id="camera-toggle-btn">
+                                    <i class="fa fa-power-off"></i>
+                                </button>
+                                <button class="w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-primary transition-colors" id="camera-refresh-btn">
+                                    <i class="fa fa-refresh"></i>
+                                </button>
+                                <button class="w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-primary transition-colors" id="capture-image-btn">
+                                    <i class="fa fa-camera"></i>
+                                </button>
+                                <button class="w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-primary transition-colors" id="camera-settings-btn">
+                                    <i class="fa fa-cog"></i>
+                                </button>
+                            </div>
+                        </div>
+                </div>
+                
+                <!-- 判定过程 -->
+                <div id="recognition-process-container" class="bg-white rounded-xl p-6 card-shadow">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">商品识别过程</h3>
+                        <span class="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                            ID: VM20231015A7B3C9
+                        </span>
+                    </div>
+                    
+                    <!-- 判定步骤 -->
+                    <div class="space-y-4">
+                        <!-- 步骤1: 图像捕获 -->
+                        <div class="flex items-start">
+                            <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                                <i class="fa fa-check text-success"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="font-medium">1. 图像捕获</p>
+                                <p class="text-sm text-dark-2 mt-1">已捕获商品图像，准备进行识别</p>
+                                <div class="flex items-center mt-2 text-xs text-dark-2">
+                                    <i class="fa fa-clock-o mr-1"></i>
+                                    <span>14:30:10</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 步骤2: 商品识别 -->
+                        <div class="flex items-start">
+                            <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                                <i class="fa fa-check text-success"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="font-medium">2. 商品识别</p>
+                                <p class="text-sm text-dark-2 mt-1">识别到2件商品，正在进行商品匹配</p>
+                                <div class="flex items-center mt-2 text-xs text-dark-2">
+                                    <i class="fa fa-clock-o mr-1"></i>
+                                    <span>14:30:12</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 步骤3: 价格计算 -->
+                        <div class="flex items-start">
+                            <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                                <i class="fa fa-check text-success"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="font-medium">3. 价格计算</p>
+                                <p class="text-sm text-dark-2 mt-1">商品总价：¥15.50</p>
+                                <div class="flex items-center mt-2 text-xs text-dark-2">
+                                    <i class="fa fa-clock-o mr-1"></i>
+                                    <span>14:30:13</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 步骤4: 等待支付 -->
+                        <div class="flex items-start">
+                            <div class="w-10 h-10 rounded-full bg-warning flex items-center justify-center flex-shrink-0">
+                                <i class="fa fa-spinner fa-spin text-white"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="font-medium">4. 等待支付</p>
+                                <p class="text-sm text-dark-2 mt-1">已生成支付二维码，等待用户扫码支付</p>
+                                <div class="flex items-center mt-2 text-xs text-dark-2">
+                                    <i class="fa fa-clock-o mr-1"></i>
+                                    <span>14:30:15 - 进行中</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 步骤5: 出货 -->
+                        <div class="flex items-start opacity-50">
+                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                <i class="fa fa-cube text-dark-2"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="font-medium">5. 出货</p>
+                                <p class="text-sm text-dark-2 mt-1">等待支付完成后出货</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 步骤6: 完成交易 -->
+                        <div class="flex items-start opacity-50">
+                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                <i class="fa fa-check-circle text-dark-2"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="font-medium">6. 完成交易</p>
+                                <p class="text-sm text-dark-2 mt-1">交易完成，准备下一笔订单</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧信息面板 -->
+            <div class="space-y-6">
+                <!-- 支付状态 -->
+                <div id="payment-status-container" class="bg-white rounded-xl p-6 card-shadow">
+                    <div class="text-center py-12">
+                        <i class="fa fa-shopping-cart text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-medium text-dark-2 mb-2">暂无待支付订单</h3>
+                    </div>
+                </div>
+                
+                <!-- 识别商品详情 -->
+                <div id="recognition-details-container" class="bg-white rounded-xl p-6 card-shadow" style="display: none;">
+                    <h3 class="text-lg font-bold mb-4">识别商品详情</h3>
+                    
+                    <!-- 商品列表 -->
+                    <div class="space-y-4" id="recognized-products-list">
+                        <!-- 商品将在这里动态加载 -->
+                    </div>
+                    
+                    <!-- 价格汇总 -->
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <span class="text-dark-2">商品总价</span>
+                            <span class="font-medium" id="total-amount">¥0.00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 系统状态 -->
+                <div class="bg-white rounded-xl p-6 card-shadow">
+                    <h3 class="text-lg font-bold mb-4">系统状态</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-dark-2 flex items-center">
+                                <i class="fa fa-tint text-primary mr-2"></i>
+                                制冷系统
+                            </span>
+                            <span class="px-2 py-1 rounded-full bg-success/10 text-success text-xs">正常</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-dark-2 flex items-center">
+                                <i class="fa fa-bolt text-warning mr-2"></i>
+                                电源系统
+                            </span>
+                            <span class="px-2 py-1 rounded-full bg-success/10 text-success text-xs">正常</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-dark-2 flex items-center">
+                                <i class="fa fa-wifi text-secondary mr-2"></i>
+                                网络连接
+                            </span>
+                            <span class="px-2 py-1 rounded-full bg-success/10 text-success text-xs">正常</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-dark-2 flex items-center">
+                                <i class="fa fa-video-camera text-primary mr-2"></i>
+                                摄像头
+                            </span>
+                            <span class="px-2 py-1 rounded-full bg-success/10 text-success text-xs">正常</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-dark-2 flex items-center">
+                                <i class="fa fa-battery-half text-warning mr-2"></i>
+                                备用电源
+                            </span>
+                            <span class="px-2 py-1 rounded-full bg-warning/10 text-warning text-xs">85%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-dark-2 flex items-center">
+                                <i class="fa fa-thermometer-half text-danger mr-2"></i>
+                                内部温度
+                            </span>
+                            <span class="px-2 py-1 rounded-full bg-success/10 text-success text-xs">4°C</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- JavaScript -->
+    <script>
+        // 更新当前时间和日期
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            };
+            const dateStr = now.toLocaleDateString('zh-CN', options);
+            const timeStr = now.toLocaleTimeString('zh-CN');
+            
+            const dateElement = document.getElementById('current-date');
+            if (dateElement) {
+                dateElement.textContent = dateStr;
+            }
+            
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                timeElement.textContent = timeStr;
+            }
+        }
+        
+        // 初始化时间并每秒更新
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+        
+        // 模拟支付倒计时
+        let countdown = 58;
+        let countdownInterval;
+        
+        function updateCountdown() {
+            const countdownElement = document.getElementById('payment-countdown');
+            if (countdownElement) {
+                countdownElement.textContent = `${countdown}秒`;
+                countdown--;
+                
+                if (countdown < 0) {
+                    if (countdownInterval) {
+                        clearInterval(countdownInterval);
+                    }
+                    countdownElement.textContent = '已超时';
+                    // 显示超时提示
+                    showNotification('支付已超时，请重新下单', 'warning');
+                }
+            } else {
+                // 如果元素不存在，清除定时器以避免错误
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                }
+            }
+        }
+        
+        // 只在元素存在时启动定时器
+        if (document.getElementById('payment-countdown')) {
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+        
+        // 显示通知消息
+        function showNotification(message, type = 'info') {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full`;
+            
+            // 设置不同类型的样式
+            if (type === 'success') {
+                notification.classList.add('bg-success', 'text-white');
+            } else if (type === 'error') {
+                notification.classList.add('bg-danger', 'text-white');
+            } else if (type === 'warning') {
+                notification.classList.add('bg-warning', 'text-white');
+            } else {
+                notification.classList.add('bg-primary', 'text-white');
+            }
+            
+            // 设置消息内容
+            notification.textContent = message;
+            
+            // 添加到页面
+            document.body.appendChild(notification);
+            
+            // 显示通知
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+                notification.classList.add('translate-x-0');
+            }, 10);
+            
+            // 自动关闭
+            setTimeout(() => {
+                notification.classList.remove('translate-x-0');
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // 显示带有登录链接的通知
+        function showLoginNotification(pageName, item) {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full`;
+            
+            // 设置警告样式
+            notification.classList.add('bg-warning', 'text-white');
+            
+            // 设置消息内容，包含登录链接
+            const messageSpan = document.createElement('span');
+            messageSpan.textContent = `需要验证身份才能访问${pageName} `;
+            
+            const loginLink = document.createElement('a');
+            loginLink.href = '#';
+            loginLink.textContent = '立即验证';
+            loginLink.className = 'underline font-medium cursor-pointer';
+            loginLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                // 保存当前要访问的页面，以便登录后返回
+                localStorage.setItem('redirect_after_login', item);
+                // 显示登录模态框而不是跳转到Django管理界面
+                showLoginModal();
+            });
+            
+            notification.appendChild(messageSpan);
+            notification.appendChild(loginLink);
+            
+            // 添加到页面
+            document.body.appendChild(notification);
+            
+            // 显示通知
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+                notification.classList.add('translate-x-0');
+            }, 10);
+            
+            // 自动关闭通知，因为用户会看到登录模态框
+            setTimeout(() => {
+                notification.classList.remove('translate-x-0');
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // 显示登录模态框
+        function showLoginModal() {
+            // 检查是否已存在登录模态框
+            let modal = document.getElementById('login-modal');
+            if (!modal) {
+                // 创建模态框容器
+                modal = document.createElement('div');
+                modal.id = 'login-modal';
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300';
+                
+                // 创建模态框内容
+                const modalContent = document.createElement('div');
+                modalContent.className = 'bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4 transform transition-transform duration-300 scale-95 opacity-0';
+                
+                // 添加模态框头部
+                const modalHeader = document.createElement('div');
+                modalHeader.className = 'flex justify-between items-center mb-4';
+                
+                const modalTitle = document.createElement('h2');
+                modalTitle.className = 'text-xl font-bold text-gray-800';
+                modalTitle.textContent = '身份验证';
+                
+                const closeButton = document.createElement('button');
+                closeButton.className = 'text-gray-400 hover:text-gray-600 focus:outline-none';
+                closeButton.innerHTML = '&times;';
+                closeButton.addEventListener('click', function() {
+                    hideLoginModal();
+                });
+                
+                modalHeader.appendChild(modalTitle);
+                modalHeader.appendChild(closeButton);
+                
+                // 添加登录表单
+                const loginForm = document.createElement('form');
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    handleLogin();
+                });
+                
+                // 用户名输入
+                const usernameGroup = document.createElement('div');
+                usernameGroup.className = 'mb-4';
+                
+                const usernameLabel = document.createElement('label');
+                usernameLabel.className = 'block text-gray-700 text-sm font-bold mb-2';
+                usernameLabel.textContent = '用户名';
+                usernameLabel.htmlFor = 'login-username';
+                
+                const usernameInput = document.createElement('input');
+                usernameInput.type = 'text';
+                usernameInput.id = 'login-username';
+                usernameInput.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent';
+                usernameInput.placeholder = '请输入用户名';
+                usernameInput.required = true;
+                
+                usernameGroup.appendChild(usernameLabel);
+                usernameGroup.appendChild(usernameInput);
+                
+                // 密码输入
+                const passwordGroup = document.createElement('div');
+                passwordGroup.className = 'mb-6';
+                
+                const passwordLabel = document.createElement('label');
+                passwordLabel.className = 'block text-gray-700 text-sm font-bold mb-2';
+                passwordLabel.textContent = '密码';
+                passwordLabel.htmlFor = 'login-password';
+                
+                const passwordInput = document.createElement('input');
+                passwordInput.type = 'password';
+                passwordInput.id = 'login-password';
+                passwordInput.className = 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent';
+                passwordInput.placeholder = '请输入密码';
+                passwordInput.required = true;
+                
+                passwordGroup.appendChild(passwordLabel);
+                passwordGroup.appendChild(passwordInput);
+                
+                // 登录按钮
+                const submitButton = document.createElement('button');
+                submitButton.type = 'submit';
+                submitButton.className = 'w-full bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200';
+                submitButton.textContent = '登录';
+                
+                // 添加到表单
+                loginForm.appendChild(usernameGroup);
+                loginForm.appendChild(passwordGroup);
+                loginForm.appendChild(submitButton);
+                
+                // 添加到底部的可选链接
+                const formFooter = document.createElement('div');
+                formFooter.className = 'mt-4 text-center text-sm text-gray-600';
+                
+                const adminLoginLink = document.createElement('a');
+                adminLoginLink.href = '/admin/login/?next=' + encodeURIComponent(window.location.pathname);
+                adminLoginLink.className = 'text-primary hover:underline';
+                adminLoginLink.textContent = '使用管理员账号登录';
+                
+                formFooter.appendChild(adminLoginLink);
+                
+                // 添加所有元素到模态框内容
+                modalContent.appendChild(modalHeader);
+                modalContent.appendChild(loginForm);
+                modalContent.appendChild(formFooter);
+                
+                // 添加到模态框
+                modal.appendChild(modalContent);
+                
+                // 添加到页面
+                document.body.appendChild(modal);
+                
+                // 显示模态框
+                setTimeout(() => {
+                    modalContent.classList.remove('scale-95', 'opacity-0');
+                    modalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            }
+        }
+        
+        // 隐藏登录模态框
+        function hideLoginModal() {
+            const modal = document.getElementById('login-modal');
+            if (modal) {
+                const modalContent = modal.querySelector('div');
+                modalContent.classList.remove('scale-100', 'opacity-100');
+                modalContent.classList.add('scale-95', 'opacity-0');
+                
+                setTimeout(() => {
+                    document.body.removeChild(modal);
+                }, 300);
+            }
+        }
+        
+        // 处理登录验证
+        function handleLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            // 简单的客户端验证（实际应用中应发送到服务器验证）
+            // 这里使用模拟验证，实际应用中应替换为真实的API调用
+            if (username && password) {
+                // 模拟生成JWT令牌
+                const mockToken = 'mock.jwt.token.' + Date.now();
+                const expiryTime = new Date().getTime() + (24 * 60 * 60 * 1000); // 24小时后过期
+                
+                // 保存令牌和过期时间
+                localStorage.setItem('access_token', mockToken);
+                localStorage.setItem('token_expiry', expiryTime);
+                
+                // 隐藏登录模态框
+                hideLoginModal();
+                
+                // 显示登录成功通知
+                showNotification('身份验证成功', 'success');
+                
+                // 检查是否需要重定向
+                checkRedirectAfterLogin();
+            } else {
+                showNotification('请输入用户名和密码', 'error');
+            }
+        }
+        
+        // 检查是否有JWT令牌
+        function hasValidToken() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return false;
+            
+            // 简单检查令牌是否过期（实际应用中应该解码JWT并检查过期时间）
+            const tokenExpiry = localStorage.getItem('token_expiry');
+            if (tokenExpiry && new Date().getTime() > tokenExpiry) {
+                // 令牌已过期，尝试刷新
+                return refreshToken();
+            }
+            
+            return true;
+        }
+        
+        // 尝试刷新令牌
+        function refreshToken() {
+            const refreshToken = localStorage.getItem('refresh_token');
+            if (!refreshToken) return false;
+            
+            try {
+                // 实际应用中应该调用刷新令牌的API
+                // 这里只是模拟刷新成功
+                const newToken = 'refreshed_' + Math.random().toString(36).substr(2);
+                const newExpiry = new Date().getTime() + 3600000; // 1小时后过期
+                
+                localStorage.setItem('access_token', newToken);
+                localStorage.setItem('token_expiry', newExpiry);
+                return true;
+            } catch (error) {
+                console.error('刷新令牌失败:', error);
+                return false;
+            }
+        }
+        
+        // 导航菜单点击事件
+        function setupNavigationListeners() {
+            const navItems = [
+                'dashboard', 'camera', 'orders', 'products', 
+                'inventory', 'payment', 'settings', 'users', 'help'
+            ];
+            
+            navItems.forEach(item => {
+                const element = document.getElementById(`nav-${item}`);
+                if (element) {
+                    element.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        // 更新活动状态
+                        document.querySelectorAll('nav a').forEach(nav => {
+                            nav.classList.remove('sidebar-item-active');
+                            nav.classList.add('text-dark-2');
+                        });
+                        
+                        this.classList.add('sidebar-item-active');
+                        this.classList.remove('text-dark-2');
+                        
+                        const pageName = this.querySelector('span').textContent;
+                        
+                        // 检查是否有有效的令牌
+                        const isAuthenticated = hasValidToken();
+                        
+                        if (isAuthenticated) {
+                            showNotification(`已验证身份，切换到${pageName}`, 'success');
+                            // 单页应用模式 - 在当前页面内切换内容
+                            loadPageContent(item);
+                        } else {
+                            // 显示带有登录链接的通知
+                            showLoginNotification(pageName, item);
+                        }
+                    });
+                }
+            });
+        }
+        
+        // 通用API请求函数
+        async function fetchData(endpoint, method = 'GET', body = null) {
+            const token = localStorage.getItem('access_token');
+            const url = `/api/${endpoint}/`;
+            
+            try {
+                // 添加超时处理
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+                
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                };
+                
+                const config = {
+                    method,
+                    headers,
+                    signal: controller.signal,
+                    ...(body ? { body: JSON.stringify(body) } : {})
+                };
+                
+                const response = await fetch(url, config);
+                clearTimeout(timeoutId); // 清除超时计时器
+                
+                if (!response.ok) {
+                    // 处理认证失败
+                    if (response.status === 401) {
+                        if (token) {
+                            // 尝试刷新令牌
+                            const refreshed = await refreshToken();
+                            if (refreshed) {
+                                // 刷新成功后重新请求
+                                return fetchData(endpoint, method, body);
+                            }
+                        }
+                        // 显示登录模态框
+                        showLoginModal();
+                        throw new Error('未授权访问，请登录');
+                    }
+                    throw new Error(`请求失败: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error(`获取${endpoint}数据失败:`, error);
+                showNotification(`获取数据失败: ${error.message}`, 'error');
+                return null;
+            }
+        }
+        
+        // 加载页面内容（单页应用模式）
+        function loadPageContent(pageName) {
+            const mainContent = document.querySelector('main');
+            
+            // 更新导航菜单活动状态
+            updateActiveNav(pageName);
+            
+            // 显示加载动画
+            mainContent.innerHTML = `
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        <p class="mt-4 text-dark-2">加载${pageName === 'dashboard' ? '总览仪表盘' : 
+                                                   pageName === 'camera' ? '摄像头监控' : 
+                                                   pageName === 'orders' ? '订单管理' : 
+                                                   pageName === 'products' ? '商品管理' : 
+                                                   pageName === 'inventory' ? '库存管理' : 
+                                                   pageName === 'payment' ? '支付管理' : 
+                                                   pageName === 'settings' ? '系统设置' : 
+                                                   pageName === 'users' ? '用户管理' : '帮助中心'}内容...</p>
+                    </div>
+                </div>
+            `;
+            
+            // 模拟加载延迟
+            setTimeout(async () => {
+                try {
+                    // 根据不同页面加载不同内容
+                    if (pageName === 'dashboard') {
+                        // 加载总览仪表盘内容（当前页面内容）
+                        location.reload(); // 刷新页面回到原始仪表盘
+                    } else if (pageName === 'camera') {
+                        // 摄像头监控页面内容
+                        // 保持整体布局结构，只替换内容区域
+                        const mainContainer = document.querySelector('main');
+                        if (mainContainer) {
+                            mainContainer.innerHTML = `
+                                <!-- 面包屑导航 -->
+                                <nav class="flex mb-6" aria-label="Breadcrumb">
+                                    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                                        <li class="inline-flex items-center">
+                                            <a href="#dashboard" id="breadcrumb-home" class="text-sm font-medium text-primary hover:text-primary/80">
+                                                <i class="fa fa-home mr-1"></i>首页
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <div class="flex items-center">
+                                                <i class="fa fa-chevron-right text-gray-400 text-xs mx-2"></i>
+                                                <span class="text-sm font-medium text-dark">摄像头监控中心</span>
+                                            </div>
+                                        </li>
+                                    </ol>
+                                </nav>
+                                
+                                <header class="flex justify-between items-center mb-6">
+                                    <div>
+                                        <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark">摄像头监控中心</h2>
+                                        <p class="text-dark-2 mt-1">实时监控自动售卖机内部情况</p>
+                                    </div>
+                                    
+                                    <!-- 返回仪表盘按钮 -->
+                                    <button id="back-to-dashboard" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md transition-colors">
+                                        <i class="fa fa-arrow-left mr-2"></i>返回仪表盘
+                                    </button>
+                                </header>
+                                
+                                <div class="bg-white rounded-xl p-6 card-shadow">
+                                    <div class="relative bg-gray-900 rounded-lg overflow-hidden" style="height: 600px;">
+                                        <!-- 电脑摄像头视频元素 -->
+                                        <video id="camera-feed" class="w-full h-full object-cover" autoplay muted playsinline></video>
+                                        <!-- 默认显示的占位层 -->
+                                        <div id="camera-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-black/70 z-10">
+                                            <i class="fa fa-video-camera text-6xl mb-4 text-gray-400"></i>
+                                            <h3 class="text-xl font-semibold mb-2 text-white">等待摄像头连接</h3>
+                                            <p class="text-gray-300">点击下方电源按钮开启摄像头</p>
+                                        </div>
+                                        <div class="absolute top-4 left-4 px-3 py-2 bg-black/70 text-white rounded-lg text-sm hidden" id="recognition-status">
+                                            <span id="status-message">识别系统就绪</span>
+                                        </div>
+                                        <div class="absolute bottom-4 right-4 flex space-x-2">
+                                            <button id="camera-toggle-btn" class="w-10 h-10 rounded-full bg-danger/80 text-white flex items-center justify-center hover:bg-primary transition-colors">
+                                                <i class="fa fa-power-off"></i>
+                                            </button>
+                                            <button id="start-recognition-btn" class="w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-warning transition-colors">
+                                                <i class="fa fa-search"></i>
+                                            </button>
+                                            <button id="stop-recognition-btn" class="w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-danger transition-colors">
+                                                <i class="fa fa-stop"></i>
+                                            </button>
+                                            <button id="camera-refresh-btn" class="w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-primary transition-colors">
+                                                <i class="fa fa-refresh"></i>
+                                            </button>
+                                            <button id="capture-image-btn" class="w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-primary transition-colors">
+                                                <i class="fa fa-camera"></i>
+                                            </button>
+                                            <button id="expand-camera-btn" class="w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-primary transition-colors">
+                                                <i class="fa fa-expand"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // 重新设置导航事件监听器
+                        setupNavigationListeners();
+                        
+                        // 设置摄像头页面特有的按钮监听器
+                        setupCameraButtonListeners();
+                        
+                        // 设置返回仪表盘按钮事件
+                        const backButton = document.getElementById('back-to-dashboard');
+                        if (backButton) {
+                            backButton.addEventListener('click', function() {
+                                loadPageContent('dashboard');
+                            });
+                        }
+                        
+                        // 设置面包屑导航点击事件
+                        const breadcrumbHome = document.getElementById('breadcrumb-home');
+                        if (breadcrumbHome) {
+                            breadcrumbHome.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                loadPageContent('dashboard');
+                            });
+                        }
+                    } else if (pageName === 'orders') {
+                        // 订单管理页面内容
+                        const orders = await fetchData('orders/orders');
+                        renderOrdersPage(mainContent, orders);
+                    } else if (pageName === 'products') {
+                        // 商品管理页面内容
+                        try {
+                            const products = await fetchData('products'); // 正确的API路径是 /api/products/
+                            // 如果API返回null或没有结果，使用模拟数据
+                            if (!products || !products.results || products.results.length === 0) {
+                                renderProductsPage(mainContent, null); // 传入null会使用模拟数据
+                            } else {
+                                renderProductsPage(mainContent, products);
+                            }
+                        } catch (error) {
+                            console.error('加载商品数据失败:', error);
+                            showNotification('加载商品数据失败，使用模拟数据', 'warning');
+                            renderProductsPage(mainContent, null); // 传入null会使用模拟数据
+                        }
+                    } else if (pageName === 'inventory') {
+                        // 库存管理页面内容
+                        const inventory = await fetchData('inventory/inventory');
+                        renderInventoryPage(mainContent, inventory);
+                    } else if (pageName === 'payment') {
+                        // 支付管理页面内容
+                        const payments = await fetchData('payments/payments');
+                        renderPaymentPage(mainContent, payments);
+                    } else if (pageName === 'users') {
+                        // 用户管理页面内容
+                        const users = await fetchData('users/users');
+                        renderUsersPage(mainContent, users);
+                    } else if (pageName === 'settings') {
+                        // 系统设置页面内容
+                        renderSettingsPage(mainContent);
+                    } else {
+                        // 帮助中心页面内容
+                        renderHelpPage(mainContent);
+                    }
+                    
+                    // 更新页面标题和面包屑
+                    updatePageTitle(pageName);
+                } catch (error) {
+                    handlePageError(error, pageName);
+                }
+            }, 800);
+        }
+        
+        // 渲染订单管理页面
+        function renderOrdersPage(mainContent, ordersData) {
+            // 如果没有数据，使用模拟数据
+            const orders = ordersData && ordersData.results ? ordersData.results : [
+                {
+                    id: 'VM20231015A7B3C9',
+                    products: '矿泉水550ml, 薯片(原味)',
+                    amount: 15.50,
+                    status: 'pending',
+                    created_at: '2023-10-15 14:30:10'
+                },
+                {
+                    id: 'VM20231015A6C2B8',
+                    products: '可乐330ml',
+                    amount: 5.00,
+                    status: 'completed',
+                    created_at: '2023-10-15 14:25:36'
+                }
+            ];
+            
+            mainContent.innerHTML = `
+                <header class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark">订单管理</h2>
+                        <p class="text-dark-2 mt-1">查看和管理所有交易订单</p>
+                    </div>
+                    <button id="filter-orders-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                        <i class="fa fa-filter mr-2"></i>筛选订单
+                    </button>
+                </header>
+                <div class="bg-white rounded-xl p-6 card-shadow overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="py-3 px-4 text-left text-dark-2">订单编号</th>
+                                <th class="py-3 px-4 text-left text-dark-2">商品</th>
+                                <th class="py-3 px-4 text-left text-dark-2">金额</th>
+                                <th class="py-3 px-4 text-left text-dark-2">状态</th>
+                                <th class="py-3 px-4 text-left text-dark-2">时间</th>
+                                <th class="py-3 px-4 text-left text-dark-2">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${orders.map(order => `
+                                <tr class="border-b border-gray-100 hover:bg-light-bg/50 transition-colors">
+                                    <td class="py-3 px-4">${order.id}</td>
+                                    <td class="py-3 px-4">${order.products || '商品信息不可用'}</td>
+                                    <td class="py-3 px-4 font-medium">¥${order.amount?.toFixed(2) || '0.00'}</td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2 py-1 rounded-full ${order.status === 'completed' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'} text-xs">
+                                            ${order.status === 'completed' ? '已完成' : '等待支付'}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4">${order.created_at || '时间不可用'}</td>
+                                    <td class="py-3 px-4">
+                                        <button class="view-order-btn text-primary hover:text-primary/80 transition-colors mr-3" data-order-id="${order.id}">查看</button>
+                                        ${order.status !== 'completed' ? `
+                                            <button class="cancel-order-btn text-danger hover:text-danger/80 transition-colors" data-order-id="${order.id}">取消</button>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            // 添加按钮事件监听
+            document.querySelectorAll('.view-order-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const orderId = this.getAttribute('data-order-id');
+                    showNotification(`查看订单 ${orderId} 详情`, 'info');
+                    // 实际应用中，这里应该打开订单详情模态框
+                });
+            });
+            
+            document.querySelectorAll('.cancel-order-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const orderId = this.getAttribute('data-order-id');
+                    if (confirm(`确定要取消订单 ${orderId} 吗？`)) {
+                        showNotification(`订单 ${orderId} 已取消`, 'success');
+                        // 实际应用中，这里应该调用取消订单API
+                    }
+                });
+            });
+            
+            document.getElementById('filter-orders-btn').addEventListener('click', function() {
+                showNotification('打开订单筛选器', 'info');
+                // 实际应用中，这里应该打开筛选器模态框
+            });
+        }
+        
+        // 渲染商品管理页面
+        function renderProductsPage(mainContent, productsData) {
+            // 如果没有数据，使用模拟数据
+            const products = productsData && productsData.results ? productsData.results : [
+                {
+                    id: 1,
+                    name: '可乐330ml',
+                    price: 5.00,
+                    stock: 100,
+                    location: 'A1',
+                    image_url: ''
+                },
+                {
+                    id: 2,
+                    name: '矿泉水550ml',
+                    price: 3.50,
+                    stock: 150,
+                    location: 'A2',
+                    image_url: ''
+                },
+                {
+                    id: 3,
+                    name: '薯片(原味)',
+                    price: 10.00,
+                    stock: 80,
+                    location: 'B1',
+                    image_url: ''
+                }
+            ];
+            
+            mainContent.innerHTML = `
+                <header class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark">商品管理</h2>
+                        <p class="text-dark-2 mt-1">管理自动售卖机中的商品</p>
+                    </div>
+                    <button id="add-product-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                        <i class="fa fa-plus mr-2"></i>添加商品
+                    </button>
+                </header>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${products.map(product => `
+                        <div class="bg-white rounded-xl overflow-hidden card-shadow hover:shadow-lg transition-shadow">
+                            <div class="p-6">
+                                <div class="flex items-center mb-4">
+                                    <div class="w-16 h-16 bg-gray-100 rounded-lg mr-4 flex items-center justify-center">
+                    <i class="fa fa-shopping-bag text-gray-400"></i>
+                </div>
+                                    <div>
+                                        <h3 class="font-bold text-dark">${product.name}</h3>
+                                        <p class="text-dark-2 text-sm">货道位置: ${product.location}</p>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <div>
+                                        <p class="text-dark-2 text-sm">价格</p>
+                                        <p class="font-bold text-primary text-xl">¥${product.price?.toFixed(2) || '0.00'}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-dark-2 text-sm">库存</p>
+                                        <p class="font-bold text-dark">${product.stock || 0}</p>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="edit-product-btn flex-1 bg-secondary text-white py-2 rounded-lg hover:bg-secondary/90 transition-colors" data-product-id="${product.id}">
+                                        <i class="fa fa-edit mr-1"></i>编辑
+                                    </button>
+                                    <button class="delete-product-btn flex-1 bg-danger text-white py-2 rounded-lg hover:bg-danger/90 transition-colors" data-product-id="${product.id}">
+                                        <i class="fa fa-trash mr-1"></i>删除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            // 添加按钮事件监听
+            document.querySelectorAll('.edit-product-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    showNotification(`编辑商品 ID: ${productId}`, 'info');
+                    // 实际应用中，这里应该打开编辑商品模态框
+                });
+            });
+            
+            document.querySelectorAll('.delete-product-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    if (confirm(`确定要删除该商品吗？`)) {
+                        showNotification(`商品已删除`, 'success');
+                        // 实际应用中，这里应该调用删除商品API
+                    }
+                });
+            });
+            
+            document.getElementById('add-product-btn').addEventListener('click', function() {
+                showNotification('添加新商品', 'info');
+                // 实际应用中，这里应该打开添加商品模态框
+            });
+        }
+        
+        // 渲染库存管理页面
+        function renderInventoryPage(mainContent, inventoryData) {
+            // 如果没有数据，使用模拟数据
+            const inventory = inventoryData && inventoryData.results ? inventoryData.results : [
+                {
+                    id: 1,
+                    product_name: '可乐330ml',
+                    current_stock: 100,
+                    alert_threshold: 20,
+                    location: 'A1'
+                },
+                {
+                    id: 2,
+                    product_name: '矿泉水550ml',
+                    current_stock: 150,
+                    alert_threshold: 20,
+                    location: 'A2'
+                },
+                {
+                    id: 3,
+                    product_name: '薯片(原味)',
+                    current_stock: 15,
+                    alert_threshold: 20,
+                    location: 'B1'
+                }
+            ];
+            
+            mainContent.innerHTML = `
+                <header class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark">库存管理</h2>
+                        <p class="text-dark-2 mt-1">查看和管理库存情况</p>
+                    </div>
+                    <button id="export-inventory-btn" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-secondary/90 transition-colors">
+                        <i class="fa fa-download mr-2"></i>导出库存
+                    </button>
+                </header>
+                <div class="bg-white rounded-xl p-6 card-shadow overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="py-3 px-4 text-left text-dark-2">商品名称</th>
+                                <th class="py-3 px-4 text-left text-dark-2">货道位置</th>
+                                <th class="py-3 px-4 text-left text-dark-2">当前库存</th>
+                                <th class="py-3 px-4 text-left text-dark-2">预警阈值</th>
+                                <th class="py-3 px-4 text-left text-dark-2">状态</th>
+                                <th class="py-3 px-4 text-left text-dark-2">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${inventory.map(item => {
+                                const isLowStock = item.current_stock < item.alert_threshold;
+                                return `
+                                <tr class="border-b border-gray-100 hover:bg-light-bg/50 transition-colors">
+                                    <td class="py-3 px-4">${item.product_name}</td>
+                                    <td class="py-3 px-4">${item.location}</td>
+                                    <td class="py-3 px-4">${item.current_stock}</td>
+                                    <td class="py-3 px-4">${item.alert_threshold}</td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2 py-1 rounded-full ${isLowStock ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'} text-xs">
+                                            ${isLowStock ? '库存不足' : '库存充足'}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <button class="restock-btn text-primary hover:text-primary/80 transition-colors mr-3" data-inventory-id="${item.id}">补货</button>
+                                        <button class="edit-stock-btn text-secondary hover:text-secondary/80 transition-colors" data-inventory-id="${item.id}">调整</button>
+                                    </td>
+                                </tr>
+                            `}).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            // 添加按钮事件监听
+            document.querySelectorAll('.restock-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const inventoryId = this.getAttribute('data-inventory-id');
+                    showNotification(`为库存项 ${inventoryId} 补货`, 'info');
+                    // 实际应用中，这里应该打开补货模态框
+                });
+            });
+            
+            document.querySelectorAll('.edit-stock-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const inventoryId = this.getAttribute('data-inventory-id');
+                    showNotification(`调整库存项 ${inventoryId}`, 'info');
+                    // 实际应用中，这里应该打开调整库存模态框
+                });
+            });
+            
+            document.getElementById('export-inventory-btn').addEventListener('click', function() {
+                showNotification('正在导出库存数据...', 'info');
+                // 模拟导出过程
+                setTimeout(() => {
+                    showNotification('库存数据导出成功', 'success');
+                }, 1000);
+            });
+        }
+        
+        // 渲染支付管理页面
+        function renderPaymentPage(mainContent, paymentsData) {
+            // 如果没有数据，使用模拟数据
+            const payments = paymentsData && paymentsData.results ? paymentsData.results : [
+                {
+                    id: 1,
+                    order_id: 'VM20231015A6C2B8',
+                    amount: 5.00,
+                    method: 'wechat',
+                    status: 'completed',
+                    created_at: '2023-10-15 14:25:36'
+                },
+                {
+                    id: 2,
+                    order_id: 'VM20231015A5D1B7',
+                    amount: 13.50,
+                    method: 'alipay',
+                    status: 'completed',
+                    created_at: '2023-10-15 14:20:12'
+                }
+            ];
+            
+            mainContent.innerHTML = `
+                <header class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark">支付管理</h2>
+                        <p class="text-dark-2 mt-1">管理支付方式和交易记录</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="refresh-qr-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                            <i class="fa fa-qrcode mr-2"></i>刷新二维码
+                        </button>
+                        <button id="cancel-order-btn" class="bg-danger text-white px-4 py-2 rounded-lg hover:bg-danger/90 transition-colors">
+                            <i class="fa fa-times mr-2"></i>取消订单
+                        </button>
+                    </div>
+                </header>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white rounded-xl p-6 card-shadow">
+                        <h3 class="font-bold text-dark mb-4">交易记录</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200">
+                                        <th class="py-3 px-4 text-left text-dark-2">订单编号</th>
+                                        <th class="py-3 px-4 text-left text-dark-2">金额</th>
+                                        <th class="py-3 px-4 text-left text-dark-2">支付方式</th>
+                                        <th class="py-3 px-4 text-left text-dark-2">状态</th>
+                                        <th class="py-3 px-4 text-left text-dark-2">时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${payments.map(payment => `
+                                        <tr class="border-b border-gray-100 hover:bg-light-bg/50 transition-colors">
+                                            <td class="py-3 px-4">${payment.order_id}</td>
+                                            <td class="py-3 px-4 font-medium">¥${payment.amount?.toFixed(2) || '0.00'}</td>
+                                            <td class="py-3 px-4">
+                                                <i class="fa ${payment.method === 'wechat' ? 'fa-weixin text-green-500' : 'fa-credit-card text-blue-500'}"></i>
+                                                ${payment.method === 'wechat' ? '微信支付' : '支付宝'}
+                                            </td>
+                                            <td class="py-3 px-4">
+                                                <span class="px-2 py-1 rounded-full bg-success/10 text-success text-xs">已完成</span>
+                                            </td>
+                                            <td class="py-3 px-4">${payment.created_at || '时间不可用'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-6 card-shadow">
+                        <h3 class="font-bold text-dark mb-4">当前支付二维码</h3>
+                        <div class="flex flex-col items-center">
+                            <div class="w-40 h-40 bg-white p-2 border border-gray-200 rounded-lg mb-4">
+                                <div class="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+                        <i class="fa fa-qrcode text-4xl text-gray-500"></i>
+                    </div>
+                            </div>
+                            <p class="text-dark-2 text-sm text-center mb-2">请使用手机扫描二维码完成支付</p>
+                            <p class="text-dark font-bold">有效期: <span id="countdown">58</span>秒</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            setupPaymentButtonListeners();
+        }
+        
+        // 渲染用户管理页面
+        function renderUsersPage(mainContent, usersData) {
+            // 如果没有数据，使用模拟数据
+            const users = usersData && usersData.results ? usersData.results : [
+                {
+                    id: 1,
+                    username: 'admin',
+                    email: 'admin@example.com',
+                    is_staff: true,
+                    is_active: true
+                },
+                {
+                    id: 2,
+                    username: 'manager',
+                    email: 'manager@example.com',
+                    is_staff: true,
+                    is_active: true
+                },
+                {
+                    id: 3,
+                    username: 'operator',
+                    email: 'operator@example.com',
+                    is_staff: false,
+                    is_active: true
+                }
+            ];
+            
+            mainContent.innerHTML = `
+                <header class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark">用户管理</h2>
+                        <p class="text-dark-2 mt-1">管理系统用户和权限</p>
+                    </div>
+                    <button id="add-user-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                        <i class="fa fa-user-plus mr-2"></i>添加用户
+                    </button>
+                </header>
+                <div class="bg-white rounded-xl p-6 card-shadow overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="py-3 px-4 text-left text-dark-2">用户名</th>
+                                <th class="py-3 px-4 text-left text-dark-2">邮箱</th>
+                                <th class="py-3 px-4 text-left text-dark-2">管理员</th>
+                                <th class="py-3 px-4 text-left text-dark-2">状态</th>
+                                <th class="py-3 px-4 text-left text-dark-2">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${users.map(user => `
+                                <tr class="border-b border-gray-100 hover:bg-light-bg/50 transition-colors">
+                                    <td class="py-3 px-4">${user.username}</td>
+                                    <td class="py-3 px-4">${user.email}</td>
+                                    <td class="py-3 px-4">
+                                        <input type="checkbox" ${user.is_staff ? 'checked' : ''} disabled class="form-checkbox text-primary h-5 w-5 rounded">
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2 py-1 rounded-full ${user.is_active ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'} text-xs">
+                                            ${user.is_active ? '启用' : '禁用'}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <button class="edit-user-btn text-primary hover:text-primary/80 transition-colors mr-3" data-user-id="${user.id}">编辑</button>
+                                        <button class="delete-user-btn text-danger hover:text-danger/80 transition-colors" data-user-id="${user.id}">
+                                            ${user.is_active ? '禁用' : '启用'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            // 添加按钮事件监听
+            document.querySelectorAll('.edit-user-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-user-id');
+                    showNotification(`编辑用户 ID: ${userId}`, 'info');
+                    // 实际应用中，这里应该打开编辑用户模态框
+                });
+            });
+            
+            document.querySelectorAll('.delete-user-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-user-id');
+                    const actionText = this.textContent.trim();
+                    if (confirm(`确定要${actionText}该用户吗？`)) {
+                        showNotification(`用户已${actionText}`, 'success');
+                        // 实际应用中，这里应该调用启用/禁用用户API
+                    }
+                });
+            });
+            
+            document.getElementById('add-user-btn').addEventListener('click', function() {
+                showNotification('添加新用户', 'info');
+                // 实际应用中，这里应该打开添加用户模态框
+            });
+        }
+        
+        // 渲染系统设置页面
+        function renderSettingsPage(mainContent) {
+            mainContent.innerHTML = `
+                <header class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark">系统设置</h2>
+                        <p class="text-dark-2 mt-1">配置系统参数和选项</p>
+                    </div>
+                    <button id="save-settings-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                        <i class="fa fa-save mr-2"></i>保存设置
+                    </button>
+                </header>
+                <div class="bg-white rounded-xl p-6 card-shadow mb-6">
+                    <h3 class="font-bold text-dark mb-4">基本设置</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-dark-2 mb-2">自动售卖机名称</label>
+                            <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" value="自动售卖机001">
+                        </div>
+                        <div>
+                            <label class="block text-dark-2 mb-2">位置信息</label>
+                            <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" value="办公大楼一楼大厅">
+                        </div>
+                        <div>
+                            <label class="block text-dark-2 mb-2">营业时间</label>
+                            <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" value="08:00 - 22:00">
+                        </div>
+                        <div>
+                            <label class="block text-dark-2 mb-2">联系电话</label>
+                            <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" value="400-123-4567">
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl p-6 card-shadow mb-6">
+                    <h3 class="font-bold text-dark mb-4">支付设置</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="wechat-pay" checked class="form-checkbox text-primary h-5 w-5 rounded mr-3">
+                            <label for="wechat-pay" class="text-dark">启用微信支付</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="alipay" checked class="form-checkbox text-primary h-5 w-5 rounded mr-3">
+                            <label for="alipay" class="text-dark">启用支付宝</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="cash-pay" class="form-checkbox text-primary h-5 w-5 rounded mr-3">
+                            <label for="cash-pay" class="text-dark">启用现金支付</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl p-6 card-shadow">
+                    <h3 class="font-bold text-dark mb-4">通知设置</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="low-stock-alert" checked class="form-checkbox text-primary h-5 w-5 rounded mr-3">
+                            <label for="low-stock-alert" class="text-dark">库存不足通知</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="maintenance-alert" checked class="form-checkbox text-primary h-5 w-5 rounded mr-3">
+                            <label for="maintenance-alert" class="text-dark">设备维护通知</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="payment-alert" class="form-checkbox text-primary h-5 w-5 rounded mr-3">
+                            <label for="payment-alert" class="text-dark">大额交易通知</label>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加按钮事件监听
+            document.getElementById('save-settings-btn').addEventListener('click', function() {
+                showNotification('系统设置已保存', 'success');
+            });
+        }
+        
+        // 渲染帮助中心页面
+        function renderHelpPage(mainContent) {
+            mainContent.innerHTML = `
+                <header class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark">帮助中心</h2>
+                        <p class="text-dark-2 mt-1">获取系统使用帮助和文档</p>
+                    </div>
+                </header>
+                <div class="bg-white rounded-xl p-6 card-shadow">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div id="faq-card" class="p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors cursor-pointer hover:bg-primary/5">
+                                <h3 class="font-bold text-dark mb-2 flex items-center">
+                                    <i class="fa fa-question-circle text-primary mr-2"></i>
+                                    常见问题
+                                </h3>
+                                <p class="text-dark-2">查看用户常见问题解答和操作指南</p>
+                            </div>
+                            <div id="manual-card" class="p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors cursor-pointer hover:bg-primary/5">
+                                <h3 class="font-bold text-dark mb-2 flex items-center">
+                                    <i class="fa fa-book text-primary mr-2"></i>
+                                    使用手册
+                                </h3>
+                                <p class="text-dark-2">下载完整的系统使用手册和操作指南</p>
+                            </div>
+                            <div id="video-card" class="p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors cursor-pointer hover:bg-primary/5">
+                                <h3 class="font-bold text-dark mb-2 flex items-center">
+                                    <i class="fa fa-video-camera text-primary mr-2"></i>
+                                    视频教程
+                                </h3>
+                                <p class="text-dark-2">观看系统操作视频教程和演示</p>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div id="support-card" class="p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors cursor-pointer hover:bg-primary/5">
+                                <h3 class="font-bold text-dark mb-2 flex items-center">
+                                    <i class="fa fa-life-ring text-primary mr-2"></i>
+                                    联系支持
+                                </h3>
+                                <p class="text-dark-2">获取技术支持和售后服务</p>
+                            </div>
+                            <div id="feedback-card" class="p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors cursor-pointer hover:bg-primary/5">
+                                <h3 class="font-bold text-dark mb-2 flex items-center">
+                                    <i class="fa fa-bug text-primary mr-2"></i>
+                                    问题反馈
+                                </h3>
+                                <p class="text-dark-2">提交系统问题和改进建议</p>
+                            </div>
+                            <div id="about-card" class="p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors cursor-pointer hover:bg-primary/5">
+                                <h3 class="font-bold text-dark mb-2 flex items-center">
+                                    <i class="fa fa-info-circle text-primary mr-2"></i>
+                                    关于系统
+                                </h3>
+                                <p class="text-dark-2">查看系统版本信息和更新日志</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加帮助中心卡片点击事件
+            document.getElementById('faq-card')?.addEventListener('click', function() {
+                showNotification('加载常见问题页面...', 'info');
+                // 实际应用中，这里应该加载FAQ页面内容
+            });
+            
+            document.getElementById('manual-card')?.addEventListener('click', function() {
+                showNotification('正在准备使用手册下载...', 'info');
+                // 实际应用中，这里应该触发手册下载
+                setTimeout(() => {
+                    showNotification('使用手册下载已开始', 'success');
+                }, 1000);
+            });
+            
+            document.getElementById('video-card')?.addEventListener('click', function() {
+                showNotification('加载视频教程列表...', 'info');
+                // 实际应用中，这里应该加载视频教程页面
+            });
+            
+            document.getElementById('support-card')?.addEventListener('click', function() {
+                showNotification('联系技术支持：400-123-4567', 'info');
+                // 实际应用中，这里应该打开联系支持页面
+            });
+            
+            document.getElementById('feedback-card')?.addEventListener('click', function() {
+                showNotification('打开问题反馈表单...', 'info');
+                // 实际应用中，这里应该打开问题反馈表单
+            });
+            
+            document.getElementById('about-card')?.addEventListener('click', function() {
+                showNotification('系统版本：v1.0.0 | 更新时间：2023-06-15', 'info');
+                // 实际应用中，这里应该显示关于系统的详细信息
+            });
+        }
+        
+        // 全局摄像头状态变量
+        let isCameraActive = false;
+        let mediaStream = null;
+        let cameraFeedElement = null;
+        let cameraPlaceholder = null;
+        let cameraToggleButton = null;
+        let cameraContainer = null;
+        
+        // 设置摄像头页面的按钮监听器
+        function setupCameraButtonListeners() {
+            // 初始化DOM引用
+            initializeCameraReferences();
+            
+            // 获取当前页面信息
+            const currentPage = getCurrentPage();
+            const isCameraPage = document.querySelector('h2')?.textContent.includes('摄像头监控中心') || currentPage === 'camera';
+            const isDashboardPage = currentPage === 'dashboard' || (!isCameraPage && document.querySelector('h2')?.textContent.includes('总览仪表盘'));
+            
+            console.log('当前页面状态:', {
+                isCameraPage, 
+                isDashboardPage, 
+                currentPage
+            });
+            
+            // 确保按钮可点击
+            if (cameraToggleButton) {
+                cameraToggleButton.disabled = false;
+                cameraToggleButton.style.pointerEvents = 'auto';
+                cameraToggleButton.style.opacity = '1';
+            }
+            
+            // 摄像头监控页面特定逻辑
+            if (isCameraPage) {
+                // 重新设置导航事件监听器
+                setupNavigationListeners();
+                
+                // 设置按钮事件监听器
+                setupCameraControls();
+                
+                // 尝试恢复摄像头状态
+                if (isCameraActive && mediaStream) {
+                    console.log('恢复摄像头状态：已激活');
+                    restoreCameraState();
+                } else {
+                    // 自动开启摄像头
+                    setTimeout(() => {
+                        if (!isCameraActive) {
+                            console.log('自动尝试开启摄像头（摄像头监控页面）');
+                            tryStartCamera();
+                        }
+                    }, 500);
+                }
+            } else if (isDashboardPage) {
+                // 总览仪表盘页面 - 不自动开启摄像头，但保持按钮可用
+                console.log('总览仪表盘页面 - 摄像头通过按钮控制');
+                
+                // 设置按钮事件监听器
+                setupCameraControls();
+                
+                // 确保UI状态正确
+                updateCameraUI(isCameraActive);
+            }
+        }
+        
+        // 获取当前页面标识
+        function getCurrentPage() {
+            // 检查面包屑导航
+            const breadcrumbActive = document.querySelector('.breadcrumb-item.active');
+            if (breadcrumbActive && breadcrumbActive.textContent.includes('摄像头监控中心')) {
+                return 'camera';
+            } else if (breadcrumbActive && breadcrumbActive.textContent.includes('控制面板')) {
+                return 'dashboard';
+            }
+            
+            // 检查h2标题
+            const h2Title = document.querySelector('h2')?.textContent;
+            if (h2Title?.includes('摄像头监控中心')) {
+                return 'camera';
+            } else if (h2Title?.includes('总览仪表盘')) {
+                return 'dashboard';
+            }
+            
+            // 检查URL或其他标识
+            const urlHash = window.location.hash;
+            if (urlHash.includes('camera')) {
+                return 'camera';
+            } else if (urlHash.includes('dashboard') || urlHash === '') {
+                return 'dashboard';
+            }
+            
+            return 'unknown';
+        }
+        
+        // 初始化摄像头相关DOM引用
+        function initializeCameraReferences() {
+            cameraFeedElement = document.getElementById('camera-feed');
+            cameraPlaceholder = document.getElementById('camera-placeholder');
+            cameraToggleButton = document.getElementById('camera-toggle-btn');
+            cameraContainer = document.querySelector('.bg-gray-900.rounded-lg');
+            recognitionStatus = document.getElementById('recognition-status');
+            statusMessage = document.getElementById('status-message');
+            startRecognitionBtn = document.getElementById('start-recognition-btn');
+            stopRecognitionBtn = document.getElementById('stop-recognition-btn');
+            recognitionProcessContainer = document.getElementById('recognition-process-container');
+            
+            console.log('摄像头DOM引用初始化完成:', {
+                cameraFeedElement: !!cameraFeedElement,
+                cameraPlaceholder: !!cameraPlaceholder,
+                cameraToggleButton: !!cameraToggleButton,
+                cameraContainer: !!cameraContainer,
+                recognitionStatus: !!recognitionStatus,
+                startRecognitionBtn: !!startRecognitionBtn,
+                stopRecognitionBtn: !!stopRecognitionBtn
+            });
+        }
+        
+        // 设置摄像头控制按钮
+        function setupCameraControls() {
+            // 安全检查 - 避免调用不存在的函数
+            if (typeof initializeRecognitionSystem === 'function') {
+                initializeRecognitionSystem();
+            } else {
+                console.log('识别系统初始化函数不可用');
+            }
+            
+            // 切换摄像头开关
+            if (cameraToggleButton) {
+                // 移除可能存在的旧事件监听器，防止重复绑定
+                const newButton = cameraToggleButton.cloneNode(true);
+                if (cameraToggleButton.parentNode) {
+                    cameraToggleButton.parentNode.replaceChild(newButton, cameraToggleButton);
+                }
+                cameraToggleButton = newButton;
+                
+                // 添加新的事件监听器
+                cameraToggleButton.addEventListener('click', function() {
+                    if (isCameraActive) {
+                        console.log('按钮点击：停止摄像头');
+                        stopCamera();
+                    } else {
+                        console.log('按钮点击：启动摄像头');
+                        tryStartCamera();
+                    }
+                });
+                console.log('摄像头开关按钮事件已绑定');
+            }
+            
+            // 开始识别按钮
+            if (startRecognitionBtn) {
+                startRecognitionBtn.addEventListener('click', function() {
+                    console.log('按钮点击：开始识别');
+                    startRecognition();
+                });
+                console.log('开始识别按钮事件已绑定');
+            }
+            
+            // 停止识别按钮
+            if (stopRecognitionBtn) {
+                stopRecognitionBtn.addEventListener('click', function() {
+                    console.log('按钮点击：停止识别');
+                    stopRecognition();
+                });
+                console.log('停止识别按钮事件已绑定');
+            }
+            
+            // 刷新摄像头画面
+            const refreshBtn = document.getElementById('camera-refresh-btn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function() {
+                    refreshCamera();
+                });
+                console.log('摄像头刷新按钮事件已绑定');
+            }
+            
+            // 捕获当前画面
+            const captureBtn = document.getElementById('capture-image-btn');
+            if (captureBtn) {
+                captureBtn.addEventListener('click', function() {
+                    captureCameraImage();
+                });
+                console.log('摄像头捕获按钮事件已绑定');
+            }
+            
+            // 全屏显示
+            const expandBtn = document.getElementById('expand-camera-btn');
+            if (expandBtn) {
+                expandBtn.addEventListener('click', function() {
+                    toggleFullscreen();
+                });
+                console.log('摄像头全屏按钮事件已绑定');
+            }
+        }
+        
+        // 尝试开启摄像头
+        function tryStartCamera() {
+            // 验证DOM引用
+            if (!cameraFeedElement || !cameraPlaceholder || !cameraToggleButton || !cameraContainer) {
+                console.error('摄像头DOM引用不完整，重新初始化...');
+                initializeCameraReferences();
+                
+                if (!cameraFeedElement || !cameraPlaceholder || !cameraToggleButton || !cameraContainer) {
+                    console.error('摄像头DOM引用初始化失败，无法启动摄像头');
+                    showNotification('摄像头初始化失败：无法找到必要的页面元素', 'error');
+                    return;
+                }
+            }
+            
+            // 如果摄像头已经激活，则不重复开启
+            if (isCameraActive) {
+                console.log('摄像头已经处于激活状态，无需重复开启');
+                return;
+            }
+            
+            showNotification('正在连接摄像头...', 'info');
+            console.log('开始尝试连接摄像头');
+            
+            // 重置video元素
+            resetVideoElement();
+            
+            // 检查浏览器兼容性
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error('浏览器不支持摄像头API');
+                showNotification('您的浏览器不支持摄像头访问，请使用现代浏览器', 'error');
+                showCameraError('浏览器不支持摄像头API');
+                return;
+            }
+            
+            // 检查并请求摄像头权限
+            checkCameraPermission().then(permissionGranted => {
+                if (!permissionGranted) {
+                    console.error('用户拒绝了摄像头权限');
+                    showNotification('请在浏览器中允许摄像头访问权限', 'error');
+                    showCameraError('需要摄像头权限');
+                    return;
+                }
+                
+                // 尝试获取摄像头媒体流
+                const constraints = { video: true };
+                
+                navigator.mediaDevices.getUserMedia(constraints)
+                    .then(stream => {
+                        console.log('成功获取摄像头媒体流');
+                        handleMediaStream(stream);
+                    })
+                    .catch(error => {
+                        console.error('获取摄像头媒体流失败:', error);
+                        handleCameraError(error);
+                    });
+            });
+        }
+        
+        // 重置video元素
+        function resetVideoElement() {
+            // 移除所有事件监听器
+            const newVideoElement = document.createElement('video');
+            newVideoElement.id = 'camera-feed';
+            newVideoElement.className = 'w-full h-full object-cover';
+            
+            // 设置必要的属性
+            newVideoElement.autoplay = true;
+            newVideoElement.muted = true;
+            newVideoElement.playsInline = true;
+            
+            // 确保正确的样式
+            newVideoElement.style.width = '100%';
+            newVideoElement.style.height = '100%';
+            newVideoElement.style.objectFit = 'cover';
+            
+            // 添加事件监听器
+            newVideoElement.oncanplay = function() {
+                console.log('视频可以播放了，尺寸:', this.videoWidth, 'x', this.videoHeight);
+                showNotification('摄像头画面已准备就绪', 'success');
+            };
+            
+            newVideoElement.onerror = function(event) {
+                console.error('视频元素错误:', event);
+                showNotification('视频播放错误', 'error');
+            };
+            
+            newVideoElement.onplay = function() {
+                console.log('视频开始播放');
+            };
+            
+            newVideoElement.onloadedmetadata = function() {
+                console.log('视频元数据已加载，分辨率:', this.videoWidth, 'x', this.videoHeight);
+            };
+            
+            // 替换旧的video元素
+            if (cameraFeedElement && cameraFeedElement.parentNode) {
+                cameraFeedElement.parentNode.replaceChild(newVideoElement, cameraFeedElement);
+            }
+            
+            // 更新引用
+            cameraFeedElement = newVideoElement;
+            console.log('视频元素已重置');
+        }
+        
+        // 检查摄像头权限
+        function checkCameraPermission() {
+            return new Promise((resolve) => {
+                if (navigator.permissions && navigator.permissions.query) {
+                    navigator.permissions.query({ name: 'camera' })
+                        .then(result => {
+                            console.log('摄像头权限状态:', result.state);
+                            
+                            if (result.state === 'granted') {
+                                resolve(true);
+                            } else if (result.state === 'denied') {
+                                resolve(false);
+                            } else {
+                                // 尚未决定，让getUserMedia请求权限
+                                resolve(true);
+                            }
+                        })
+                        .catch(() => {
+                            // 权限API不支持，继续尝试获取摄像头
+                            resolve(true);
+                        });
+                } else {
+                    // 权限API不支持，继续尝试获取摄像头
+                    resolve(true);
+                }
+            });
+        }
+        
+        // 处理获取到的媒体流
+        function handleMediaStream(stream) {
+            // 保存媒体流引用
+            mediaStream = stream;
+            
+            // 检查流中是否有视频轨道
+            const videoTracks = stream.getVideoTracks();
+            if (videoTracks.length === 0) {
+                console.error('媒体流中没有视频轨道');
+                showNotification('摄像头连接成功但没有视频轨道', 'warning');
+                return;
+            }
+            
+            console.log('视频轨道信息:', videoTracks[0].label);
+            
+            // 设置视频源
+            try {
+                // 先清空再设置，避免流冲突
+                cameraFeedElement.srcObject = null;
+                
+                // 延迟设置源，确保DOM更新完成
+                setTimeout(() => {
+                    cameraFeedElement.srcObject = stream;
+                    console.log('视频源已设置到video元素');
+                    
+                    // 显式调用播放方法
+                    cameraFeedElement.play().then(() => {
+                        console.log('视频播放成功');
+                    }).catch(playError => {
+                        console.error('视频播放失败:', playError);
+                        showNotification('视频播放失败', 'error');
+                    });
+                }, 100);
+            } catch (e) {
+                console.error('设置视频源失败:', e);
+                showNotification('设置摄像头画面失败', 'error');
+            }
+            
+            // 更新UI状态
+            updateCameraUI(true);
+        }
+        
+        // 处理摄像头错误
+        function handleCameraError(error) {
+            console.error('摄像头错误:', error);
+            
+            let errorMessage = '无法访问摄像头';
+            let errorDetail = '';
+            
+            if (error.name === 'NotAllowedError') {
+                errorMessage = '摄像头权限被拒绝';
+                errorDetail = '请在浏览器设置中启用摄像头权限';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage = '未找到摄像头设备';
+                errorDetail = '请确保您的设备有摄像头并已正确连接';
+            } else if (error.name === 'NotReadableError') {
+                errorMessage = '摄像头设备被占用';
+                errorDetail = '请关闭其他正在使用摄像头的程序';
+            } else if (error.name === 'OverconstrainedError') {
+                errorMessage = '摄像头参数不支持';
+                errorDetail = '您的设备可能不支持请求的摄像头参数';
+            }
+            
+            showNotification(`${errorMessage}：${errorDetail || error.message}`, 'error');
+            showCameraError(`${errorMessage}\n${errorDetail}`);
+        }
+        
+        // 显示摄像头错误信息
+        function showCameraError(message) {
+            if (cameraPlaceholder) {
+                cameraPlaceholder.innerHTML = `
+                    <div class="text-white text-center p-6">
+                        <i class="fa fa-exclamation-triangle text-6xl mb-4 text-yellow-500"></i>
+                        <h3 class="text-xl font-semibold mb-2">${message.split('\n')[0]}</h3>
+                        ${message.split('\n').length > 1 ? `<p class="text-gray-300">${message.split('\n')[1]}</p>` : ''}
+                        <button id="retry-camera-btn" class="mt-4 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md transition-colors">
+                            重试连接
+                        </button>
+                    </div>
+                `;
+                cameraPlaceholder.style.display = 'flex';
+                
+                // 添加重试按钮事件
+                setTimeout(() => {
+                    const retryBtn = document.getElementById('retry-camera-btn');
+                    if (retryBtn) {
+                        retryBtn.addEventListener('click', tryStartCamera);
+                    }
+                }, 100);
+            }
+        }
+        
+        // 更新摄像头UI状态
+        function updateCameraUI(isActive) {
+            isCameraActive = isActive;
+            
+            // 更新按钮样式
+            if (cameraToggleButton) {
+                if (isActive) {
+                    cameraToggleButton.classList.remove('bg-danger/80');
+                    cameraToggleButton.classList.add('bg-success');
+                } else {
+                    cameraToggleButton.classList.remove('bg-success');
+                    cameraToggleButton.classList.add('bg-danger/80');
+                }
+            }
+            
+            // 更新占位层显示
+            if (cameraPlaceholder) {
+                cameraPlaceholder.style.display = isActive ? 'none' : 'flex';
+            }
+            
+            // 更新实时监控标记
+            if (cameraContainer) {
+                let liveIndicator = document.getElementById('camera-live-indicator');
+                
+                if (isActive) {
+                    if (!liveIndicator) {
+                        liveIndicator = document.createElement('div');
+                        liveIndicator.id = 'camera-live-indicator';
+                        liveIndicator.className = 'absolute top-4 left-4 bg-red-600 text-white text-xs px-2 py-1 rounded-full flex items-center';
+                        liveIndicator.innerHTML = `<span class="inline-block w-2 h-2 bg-white rounded-full mr-1 animate-pulse"></span>实时监控`;
+                        cameraContainer.appendChild(liveIndicator);
+                    } else {
+                        liveIndicator.style.display = 'flex';
+                    }
+                } else if (liveIndicator) {
+                    liveIndicator.style.display = 'none';
+                }
+            }
+        }
+        
+        // 停止摄像头
+        function stopCamera() {
+            showNotification('正在关闭摄像头...', 'info');
+            
+            // 停止媒体流
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => {
+                    track.stop();
+                    console.log('已停止媒体轨道:', track.kind);
+                });
+                mediaStream = null;
+            }
+            
+            // 清空视频源
+            if (cameraFeedElement) {
+                cameraFeedElement.srcObject = null;
+            }
+            
+            // 更新UI状态
+            updateCameraUI(false);
+            
+            showNotification('摄像头已关闭', 'success');
+        }
+        
+        // 刷新摄像头
+        function refreshCamera() {
+            showNotification('正在刷新摄像头画面...', 'info');
+            
+            if (isCameraActive) {
+                // 先停止再重新开启
+                stopCamera();
+                
+                // 延迟重新开启，确保流完全停止
+                setTimeout(() => {
+                    tryStartCamera();
+                }, 500);
+            } else {
+                // 直接开启
+                tryStartCamera();
+            }
+        }
+        
+        // 捕获摄像头画面
+        function captureCameraImage() {
+            if (!isCameraActive || !cameraFeedElement) {
+                showNotification('请先开启摄像头', 'warning');
+                return;
+            }
+            
+            showNotification('正在捕获画面...', 'info');
+            
+            try {
+                // 创建canvas元素
+                const canvas = document.createElement('canvas');
+                const videoWidth = cameraFeedElement.videoWidth || 1280;
+                const videoHeight = cameraFeedElement.videoHeight || 720;
+                
+                // 设置canvas尺寸
+                canvas.width = videoWidth;
+                canvas.height = videoHeight;
+                
+                // 在canvas上绘制当前视频帧
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(cameraFeedElement, 0, 0, videoWidth, videoHeight);
+                
+                // 转换为图片URL
+                const imageUrl = canvas.toDataURL('image/png');
+                
+                // 创建下载链接
+                const downloadLink = document.createElement('a');
+                downloadLink.href = imageUrl;
+                downloadLink.download = `camera_capture_${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+                
+                // 触发下载
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                showNotification('画面捕获成功', 'success');
+            } catch (error) {
+                console.error('捕获画面失败:', error);
+                showNotification('捕获画面失败', 'error');
+            }
+        }
+        
+        // 切换全屏显示
+        function toggleFullscreen() {
+            if (!cameraContainer) {
+                console.error('找不到摄像头容器元素');
+                return;
+            }
+            
+            try {
+                if (!document.fullscreenElement) {
+                    // 进入全屏
+                    if (cameraContainer.requestFullscreen) {
+                        cameraContainer.requestFullscreen();
+                    } else if (cameraContainer.webkitRequestFullscreen) { /* Safari */
+                        cameraContainer.webkitRequestFullscreen();
+                    } else if (cameraContainer.msRequestFullscreen) { /* IE11 */
+                        cameraContainer.msRequestFullscreen();
+                    }
+                } else {
+                    // 退出全屏
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) { /* Safari */
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) { /* IE11 */
+                        document.msExitFullscreen();
+                    }
+                }
+            } catch (error) {
+                console.error('全屏操作失败:', error);
+                showNotification('全屏操作失败', 'error');
+            }
+        }
+        
+        // 恢复摄像头状态
+        function restoreCameraState() {
+            console.log('恢复摄像头状态');
+            
+            // 确保DOM引用存在
+            if (!cameraFeedElement || !cameraPlaceholder || !cameraToggleButton || !cameraContainer) {
+                initializeCameraReferences();
+            }
+            
+            // 如果已有媒体流，尝试重新绑定
+            if (mediaStream) {
+                try {
+                    // 检查流是否仍然有效
+                    const videoTracks = mediaStream.getVideoTracks();
+                    if (videoTracks.length > 0 && videoTracks[0].readyState === 'live') {
+                        console.log('媒体流仍然有效，重新绑定到视频元素');
+                        
+                        // 重置视频元素
+                        resetVideoElement();
+                        
+                        // 设置视频源
+                        setTimeout(() => {
+                            cameraFeedElement.srcObject = mediaStream;
+                            updateCameraUI(true);
+                        }, 100);
+                    } else {
+                        console.log('媒体流已失效，重新获取');
+                        // 流已失效，重新获取
+                        tryStartCamera();
+                    }
+                } catch (error) {
+                    console.error('恢复摄像头状态失败:', error);
+                    tryStartCamera();
+                }
+            } else {
+                console.log('没有可用的媒体流，重新获取');
+                tryStartCamera();
+            }
+        }
+        
+        // 设置支付页面的按钮监听器
+        function setupPaymentButtonListeners() {
+            // 刷新二维码
+            document.getElementById('refresh-qr-btn')?.addEventListener('click', function() {
+                showNotification('正在刷新支付二维码...', 'info');
+                // 模拟刷新二维码过程
+                setTimeout(() => {
+                    showNotification('支付二维码已刷新', 'success');
+                    // 重置并启动倒计时
+                    startPaymentCountdown();
+                }, 800);
+            });
+            
+            // 取消订单
+            document.getElementById('cancel-order-btn')?.addEventListener('click', function() {
+                if (confirm('确定要取消当前订单吗？')) {
+                    // 清除倒计时
+                    if (window.paymentTimer) {
+                        clearInterval(window.paymentTimer);
+                        window.paymentTimer = null;
+                    }
+                    
+                    // 重置倒计时显示
+                    const countdownElement = document.getElementById('payment-countdown');
+                    if (countdownElement) {
+                        countdownElement.textContent = '-';
+                        countdownElement.classList.remove('text-danger');
+                    }
+                    
+                    // 清除订单信息
+                    const orderIdElement = document.querySelector('.text-dark-2.text-sm');
+                    if (orderIdElement && orderIdElement.textContent.includes('订单号:')) {
+                        orderIdElement.textContent = '暂无订单';
+                    }
+                    
+                    // 清除支付状态容器内容并显示空订单状态
+                    const paymentContainer = document.getElementById('payment-status-container');
+                    if (paymentContainer) {
+                        // 清空容器
+                        paymentContainer.innerHTML = `
+                            <div class="text-center py-12">
+                                <i class="fa fa-shopping-cart text-6xl text-gray-300 mb-4"></i>
+                                <h3 class="text-xl font-medium text-dark-2 mb-2">暂无待支付订单</h3>
+                            </div>
+                        `;
+                    }
+                    
+                    showNotification('订单已取消', 'success');
+                }
+            });
+            
+            // 启动支付倒计时
+            window.paymentTimer = null;
+            function startPaymentCountdown() {
+                let countdown = 60;
+                const countdownElement = document.getElementById('payment-countdown');
+                
+                // 清除之前的定时器
+                if (window.paymentTimer) {
+                    clearInterval(window.paymentTimer);
+                }
+                
+                if (countdownElement) {
+                    window.paymentTimer = setInterval(() => {
+                        countdown--;
+                        if (countdownElement) {
+                            countdownElement.textContent = countdown;
+                        }
+                        if (countdown <= 0) {
+                            clearInterval(window.paymentTimer);
+                            window.paymentTimer = null;
+                            if (countdownElement) {
+                                countdownElement.textContent = '已过期';
+                                countdownElement.classList.add('text-danger');
+                            }
+                            // 自动取消订单
+                            showNotification('支付超时，订单已自动取消', 'warning');
+                            
+                            // 清除订单信息
+                            const orderIdElement = document.querySelector('.text-dark-2.text-sm');
+                            if (orderIdElement && orderIdElement.textContent.includes('订单号:')) {
+                                orderIdElement.textContent = '暂无订单';
+                            }
+                            
+                            // 清除支付状态容器内容并显示空订单状态
+                            const paymentContainer = document.getElementById('payment-status-container');
+                            if (paymentContainer) {
+                                paymentContainer.innerHTML = `
+                                    <div class="text-center py-12">
+                                        <i class="fa fa-shopping-cart text-6xl text-gray-300 mb-4"></i>
+                                        <h3 class="text-xl font-medium text-dark-2 mb-2">支付超时</h3>
+                                        <p class="text-dark-2">订单已自动取消，请重新选择商品</p>
+                                    </div>
+                                `;
+                            }
+                        }
+                    }, 1000);
+                }
+            }
+            
+            // 启动倒计时
+            startPaymentCountdown();
+        }
+        
+        // 刷新JWT令牌
+        async function refreshToken() {
+            try {
+                const refreshToken = localStorage.getItem('refresh_token');
+                if (!refreshToken) {
+                    return false;
+                }
+                
+                const response = await fetch('/api/token/refresh/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ refresh: refreshToken })
+                });
+                
+                if (!response.ok) {
+                    // 刷新令牌失败，需要重新登录
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    return false;
+                }
+                
+                const data = await response.json();
+                localStorage.setItem('access_token', data.access);
+                return true;
+            } catch (error) {
+                console.error('刷新令牌失败:', error);
+                return false;
+            }
+        }
+        
+        // 显示登录模态框
+        function showLoginModal() {
+            // 检查是否已经有登录模态框
+            if (document.getElementById('login-modal')) {
+                return;
+            }
+            
+            // 创建登录模态框
+            const modalHTML = `
+                <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                    <div class="bg-white rounded-xl w-full max-w-md p-6 card-shadow">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold text-dark">用户登录</h2>
+                            <button id="close-login-modal" class="text-dark-2 hover:text-dark">
+                                <i class="fa fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        <form id="login-form">
+                            <div class="mb-4">
+                                <label class="block text-dark-2 mb-2">用户名</label>
+                                <input type="text" id="username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" required>
+                            </div>
+                            <div class="mb-6">
+                                <label class="block text-dark-2 mb-2">密码</label>
+                                <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" required>
+                            </div>
+                            <button type="submit" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                                登录
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            // 添加到body
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // 添加事件监听
+            document.getElementById('close-login-modal')?.addEventListener('click', function() {
+                const modal = document.getElementById('login-modal');
+                if (modal) {
+                    modal.remove();
+                }
+            });
+            
+            document.getElementById('login-form')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('username')?.value;
+                const password = document.getElementById('password')?.value;
+                
+                if (!username || !password) {
+                    showNotification('请输入用户名和密码', 'error');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/users/token/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+                    
+                    if (!response.ok) {
+                        showNotification('登录失败，请检查用户名和密码', 'error');
+                        return;
+                    }
+                    
+                    const data = await response.json();
+                    localStorage.setItem('access_token', data.access);
+                    localStorage.setItem('refresh_token', data.refresh);
+                    
+                    // 关闭模态框
+                    const modal = document.getElementById('login-modal');
+                    if (modal) {
+                        modal.remove();
+                    }
+                    
+                    showNotification('登录成功', 'success');
+                    // 刷新页面内容
+                    location.reload();
+                } catch (error) {
+                    console.error('登录失败:', error);
+                    showNotification('登录失败，请稍后重试', 'error');
+                }
+            });
+        }
+        
+        // 显示通知消息
+        function showNotification(message, type = 'info') {
+            // 移除现有的通知
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notification => {
+                notification.remove();
+            });
+            
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = `notification fixed top-4 right-4 px-4 py-3 rounded-lg z-50 transform transition-all duration-300 translate-x-full`;
+            
+            // 根据类型设置样式
+            if (type === 'success') {
+                notification.classList.add('bg-success', 'text-white');
+                notification.innerHTML = `<i class="fa fa-check-circle mr-2"></i>${message}`;
+            } else if (type === 'error') {
+                notification.classList.add('bg-danger', 'text-white');
+                notification.innerHTML = `<i class="fa fa-exclamation-circle mr-2"></i>${message}`;
+            } else if (type === 'warning') {
+                notification.classList.add('bg-warning', 'text-white');
+                notification.innerHTML = `<i class="fa fa-exclamation-triangle mr-2"></i>${message}`;
+            } else {
+                notification.classList.add('bg-primary', 'text-white');
+                notification.innerHTML = `<i class="fa fa-info-circle mr-2"></i>${message}`;
+            }
+            
+            // 添加到body
+            document.body.appendChild(notification);
+            
+            // 显示通知
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+                notification.classList.add('translate-x-0');
+            }, 10);
+            
+            // 3秒后自动关闭
+            setTimeout(() => {
+                notification.classList.remove('translate-x-0');
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+        
+        // 删除重复的DOMContentLoaded事件监听器
+        // 统一使用文件末尾的初始化函数
+        
+        // 顶部按钮点击事件
+        function setupTopButtonListeners() {
+            // 通知按钮
+            document.getElementById('notification-btn')?.addEventListener('click', function() {
+                showNotification('您有3条未读通知', 'info');
+            });
+            
+            // 刷新按钮
+            document.getElementById('refresh-btn')?.addEventListener('click', function() {
+                // 添加旋转动画
+                this.querySelector('i').classList.add('fa-spin');
+                
+                // 模拟刷新过程
+                setTimeout(() => {
+                    this.querySelector('i').classList.remove('fa-spin');
+                    
+                    // 刷新摄像头画面（模拟）
+                    const cameraFeed = document.getElementById('camera-feed');
+                    if (cameraFeed && !cameraStream) {
+                        // 只有当摄像头未开启时才模拟刷新
+                        // 不再加载外部图片资源，避免ERR_BLOCKED_BY_ORB错误
+                        // 这里可以添加一些其他的视觉反馈来模拟刷新
+                        cameraFeed.style.opacity = '0.5';
+                        setTimeout(() => {
+                            cameraFeed.style.opacity = '1';
+                        }, 100);
+                    }
+                    
+                    // 显示刷新成功提示
+                    showNotification('数据已刷新！', 'success');
+                }, 1000);
+            });
+            
+            // 登出按钮
+            document.getElementById('logout-btn')?.addEventListener('click', function() {
+                if (confirm('确定要退出登录吗？')) {
+                    // 清除令牌
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    showNotification('已成功退出登录', 'success');
+                    // 重新显示登录模态框
+                    setTimeout(() => {
+                        showLoginModal();
+                    }, 1000);
+                }
+            });
+            
+            // 系统设置
+            document.getElementById('settings-btn')?.addEventListener('click', function() {
+                loadPageContent('settings');
+            });
+            
+            // 帮助中心
+            document.getElementById('help-btn')?.addEventListener('click', function() {
+                loadPageContent('help');
+            });
+        }
+        
+        // 处理页面错误
+        function handlePageError(error, fallbackContent = null) {
+            console.error('页面加载错误:', error);
+            
+            // 检查是否是认证错误
+            if (error.status === 401) {
+                // 尝试刷新令牌
+                refreshToken().then(success => {
+                    if (success) {
+                        // 刷新令牌成功，重新加载当前页面
+                        const currentPage = getCurrentPage();
+                        loadPageContent(currentPage);
+                    } else {
+                        // 刷新令牌失败，显示登录模态框
+                        showNotification('登录已过期，请重新登录', 'error');
+                        showLoginModal();
+                    }
+                });
+                return;
+            }
+            
+            // 显示错误信息
+            const mainContent = document.getElementById('main-content');
+            if (mainContent) {
+                if (fallbackContent) {
+                    mainContent.innerHTML = fallbackContent;
+                } else {
+                    mainContent.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-64 bg-white rounded-xl p-6 card-shadow">
+                            <i class="fa fa-exclamation-triangle text-danger text-5xl mb-4"></i>
+                            <h3 class="text-xl font-bold text-dark mb-2">加载失败</h3>
+                            <p class="text-dark-2 text-center mb-4">${error.message || '无法加载页面内容，请稍后重试'}</p>
+                            <button onclick="location.reload()" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                                重试
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // 获取当前页面
+        function getCurrentPage() {
+            const currentPageElement = document.querySelector('.nav-link.active');
+            if (currentPageElement && currentPageElement.dataset.page) {
+                return currentPageElement.dataset.page;
+            }
+            return 'dashboard';
+        }
+        
+        // 导出数据为CSV
+        function exportToCSV(data, filename = 'data.csv') {
+            if (!data || data.length === 0) {
+                showNotification('没有数据可导出', 'warning');
+                return;
+            }
+            
+            try {
+                // 获取所有字段名
+                const headers = Object.keys(data[0]);
+                
+                // 创建CSV内容
+                const csvContent = [
+                    headers.join(','), // 标题行
+                    ...data.map(row => headers.map(header => {
+                        const value = row[header];
+                        // 处理包含逗号、引号或换行符的值
+                        if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+                            return `"${value.replace(/"/g, '""')}"`;
+                        }
+                        return value;
+                    }).join(','))
+                ].join('\n');
+                
+                // 创建Blob对象
+                const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification('数据导出成功', 'success');
+            } catch (error) {
+                console.error('导出数据失败:', error);
+                showNotification('数据导出失败，请稍后重试', 'error');
+            }
+        }
+        
+        // 打印当前页面
+        function printCurrentPage() {
+            showNotification('正在准备打印...', 'info');
+            setTimeout(() => {
+                window.print();
+            }, 300);
+        }
+        
+        // 检查浏览器兼容性
+        function checkBrowserCompatibility() {
+            const features = {
+                'fetch API': typeof fetch !== 'undefined',
+                'localStorage': typeof localStorage !== 'undefined',
+                'ES6 支持': typeof Promise !== 'undefined',
+                'Flexbox': () => {
+                    const test = document.createElement('div');
+                    test.style.display = 'flex';
+                    return test.style.display === 'flex';
+                }
+            };
+            
+            const unsupportedFeatures = [];
+            for (const [feature, supported] of Object.entries(features)) {
+                const isSupported = typeof supported === 'function' ? supported() : supported;
+                if (!isSupported) {
+                    unsupportedFeatures.push(feature);
+                }
+            }
+            
+            if (unsupportedFeatures.length > 0) {
+                console.warn('浏览器不支持以下功能:', unsupportedFeatures.join(', '));
+                showNotification('您的浏览器可能不完全支持系统功能，建议使用最新版本的Chrome或Firefox浏览器', 'warning');
+            }
+        }
+        
+        // 更新导航菜单的活动状态
+        function updateActiveNav(pageId) {
+            // 移除所有导航项的活动状态
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // 设置当前页面的导航项为活动状态
+            const activeLink = document.querySelector(`.nav-link[data-page="${pageId}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+            
+            // 更新页面标题
+            updatePageTitle(pageId);
+        }
+        
+        // 更新页面标题
+        function updatePageTitle(pageId) {
+            const pageTitles = {
+                'dashboard': '控制面板',
+                'orders': '订单管理',
+                'products': '商品管理',
+                'inventory': '库存管理',
+                'payments': '支付管理',
+                'users': '用户管理',
+                'camera': '摄像头监控',
+                'payment': '支付界面',
+                'settings': '系统设置',
+                'help': '帮助中心'
+            };
+            
+            const pageTitle = pageTitles[pageId] || '自动售卖机管理系统';
+            document.title = `${pageTitle} - 自动售卖机管理系统`;
+            
+            // 更新面包屑导航
+            const breadcrumb = document.getElementById('breadcrumb');
+            if (breadcrumb) {
+                breadcrumb.innerHTML = `
+                    <li class="breadcrumb-item">
+                        <a href="#" class="text-primary hover:text-primary/80" onclick="loadPageContent('dashboard'); return false;">
+                            <i class="fa fa-home mr-1"></i>首页
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">${pageTitle}</li>
+                `;
+            }
+        }
+        
+        // 存储摄像头流对象
+        let cameraStream = null;
+        // 存储数据更新定时器
+        let dashboardDataInterval = null;
+        
+        // 获取电脑摄像头画面
+        async function startCamera() {
+            try {
+                // 请求用户媒体设备权限
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: {
+                        facingMode: 'environment', // 优先使用后置摄像头
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+                
+                // 获取video元素
+                const videoElement = document.getElementById('camera-feed');
+                const placeholder = document.getElementById('camera-placeholder');
+                const statusIndicator = document.querySelector('.absolute.top-4.left-4');
+                
+                // 设置视频源
+                videoElement.srcObject = stream;
+                cameraStream = stream;
+                
+                // 隐藏占位符
+                if (placeholder) {
+                    placeholder.style.display = 'none';
+                }
+                
+                // 更新状态指示器
+                if (statusIndicator) {
+                    statusIndicator.innerHTML = `
+                        <i class="fa fa-circle text-success mr-1 animate-pulse"></i>
+                        <span>实时监控中</span>
+                    `;
+                }
+                
+                // 显示商品识别过程容器
+                const recognitionProcessContainer = document.getElementById('recognition-process-container');
+                if (recognitionProcessContainer) {
+                    recognitionProcessContainer.style.display = 'block';
+                }
+                
+                // 重置商品识别过程，确保每次打开摄像头都从头开始
+                resetRecognitionProcess();
+                
+                // 摄像头开启后，开始更新商品识别过程
+                updateDashboardData();
+                // 设置定时器，每5秒更新一次数据
+                dashboardDataInterval = setInterval(updateDashboardData, 5000);
+                
+                showNotification('摄像头已成功开启', 'success');
+                
+            } catch (error) {
+                console.error('启动摄像头失败:', error);
+                showNotification(`启动摄像头失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 停止摄像头
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+                
+                // 清除数据更新定时器
+                if (dashboardDataInterval) {
+                    clearInterval(dashboardDataInterval);
+                    dashboardDataInterval = null;
+                }
+                
+                // 隐藏商品识别过程容器
+                const recognitionProcessContainer = document.getElementById('recognition-process-container');
+                if (recognitionProcessContainer) {
+                    recognitionProcessContainer.style.display = 'none';
+                }
+                
+                const placeholder = document.getElementById('camera-placeholder');
+                const statusIndicator = document.querySelector('.absolute.top-4.left-4');
+                
+                if (placeholder) {
+                    placeholder.style.display = 'flex';
+                }
+                
+                if (statusIndicator) {
+                    statusIndicator.innerHTML = `
+                        <i class="fa fa-circle text-warning mr-1 animate-pulse"></i>
+                        <span>等待开启</span>
+                    `;
+                }
+                
+                showNotification('摄像头已关闭', 'info');
+            }
+        }
+        
+
+        
+        // 支付相关按钮点击事件
+        function setupPaymentButtonListeners() {
+            // 刷新二维码
+            const refreshQrBtn = document.getElementById('refresh-qr-btn');
+            if (refreshQrBtn) {
+                refreshQrBtn.addEventListener('click', function() {
+                    const qrImage = document.querySelector('.w-40.h-40 img');
+                    const timestamp = new Date().getTime();
+                    
+                    if (qrImage) {
+                        // 不再加载外部图片资源，避免ERR_BLOCKED_BY_ORB错误
+                        // 改为更新现有图片的时间戳来模拟刷新
+                        qrImage.src = qrImage.src.split('?')[0] + '?time=' + timestamp;
+                        
+                        // 如果没有现有图片源，可以设置一个本地的占位符
+                        if (!qrImage.src || qrImage.src === '?time=' + timestamp) {
+                            // 创建一个简单的SVG图像作为占位符
+                            const svg = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIj48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjEiLz48Y2lyY2xlIGN4PSI3NSIgY3k9Ijc1IiByPSI3MCIgZmlsbD0iIzMzMyIvPjxyZWN0IHg9IjM1IiB5PSI3NSIgd2lkdGg9IjcwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMTZhOWIyIi8+PHJlY3QgeD0iMzUiIHk9IjY1IiB3aWR0aD0iNzAiIGhlaWdodD0iMTAiIGZpbGw9IiMxNmE5YjIiLz48L3N2Zz4=';
+                            qrImage.src = svg;
+                        }
+                    }
+                    
+                    // 重置倒计时
+                    if (window.countdownInterval) {
+                        clearInterval(window.countdownInterval);
+                    }
+                    window.countdown = 58;
+                    updateCountdown();
+                    window.countdownInterval = setInterval(updateCountdown, 1000);
+                    
+                    showNotification('支付二维码已刷新', 'success');
+                });
+            }
+            
+            // 取消订单
+            const cancelOrderBtn = document.getElementById('cancel-order-btn');
+            if (cancelOrderBtn) {
+                cancelOrderBtn.addEventListener('click', function() {
+                    if (confirm('确定要取消当前订单吗？')) {
+                        // 清除倒计时
+                        if (window.paymentTimer) {
+                            clearInterval(window.paymentTimer);
+                            window.paymentTimer = null;
+                        }
+                        if (window.countdownInterval) {
+                            clearInterval(window.countdownInterval);
+                            window.countdownInterval = null;
+                        }
+                        
+                        // 重置倒计时显示
+                        const countdownElement = document.getElementById('payment-countdown');
+                        if (countdownElement) {
+                            countdownElement.textContent = '-';
+                            countdownElement.classList.remove('text-danger');
+                        }
+                        
+                        // 清除订单信息
+                        const orderIdElement = document.querySelector('.text-dark-2.text-sm');
+                        if (orderIdElement && orderIdElement.textContent.includes('订单号:')) {
+                            orderIdElement.textContent = '暂无订单';
+                        }
+                        
+                        // 清除支付状态容器内容并显示空订单状态
+                        const paymentContainer = document.getElementById('payment-status-container');
+                        if (paymentContainer) {
+                            paymentContainer.innerHTML = `
+                                <div class="text-center py-12">
+                                    <i class="fa fa-shopping-cart text-6xl text-gray-300 mb-4"></i>
+                                    <h3 class="text-xl font-medium text-dark-2 mb-2">暂无待支付订单</h3>
+                                </div>
+                            `;
+                        }
+                        
+                        // 同时更新当前交易状态
+                        loadCurrentTransaction();
+                        
+                        showNotification('订单已取消', 'success');
+                    }
+                });
+            }
+        }
+        
+        // 模拟摄像头画面定时刷新 (仅在摄像头未开启时保持功能，不再依赖外部图片资源)
+        setInterval(() => {
+            const cameraFeed = document.getElementById('camera-feed');
+            const placeholder = document.getElementById('camera-placeholder');
+            
+            // 只有当摄像头未开启且显示占位符时，才继续后台任务
+            if (!cameraStream && placeholder && placeholder.style.display !== 'none') {
+                // 不再加载外部图片，避免ERR_BLOCKED_BY_ORB错误
+                // 只在控制台显示日志，表示后台仍在运行
+                console.log('摄像头模拟刷新任务运行中');
+            }
+        }, 5000);
+        
+        // 检查是否有重定向请求（登录后返回）
+        function checkRedirectAfterLogin() {
+            const redirectPage = localStorage.getItem('redirect_after_login');
+            if (redirectPage) {
+                // 清除重定向标记
+                localStorage.removeItem('redirect_after_login');
+                
+                // 检查是否已经登录（有令牌）
+                const token = localStorage.getItem('access_token');
+                if (token) {
+                    // 找到对应的导航项并触发点击
+                    const navItem = document.getElementById(`nav-${redirectPage}`);
+                    if (navItem) {
+                        navItem.click();
+                        showNotification('身份验证成功，正在跳转到您请求的页面', 'success');
+                    }
+                }
+            }
+        }
+        
+        // 更新仪表盘数据
+        function updateDashboardData() {
+            // 模拟更新销售额
+            const salesElement = document.querySelector('.card-value.text-xl.font-bold');
+            if (salesElement && salesElement.textContent.includes('¥')) {
+                const currentSales = parseFloat(salesElement.textContent.replace('¥', '').replace(',', ''));
+                const randomChange = Math.random() * 10 - 5; // 随机变化-5到+5元
+                const newSales = (currentSales + randomChange).toFixed(2);
+                // 使用动画平滑过渡数值
+                animateValue(salesElement, currentSales, parseFloat(newSales), 1000);
+                
+                // 更新百分比变化
+                const salesChangeElement = salesElement.nextElementSibling;
+                if (salesChangeElement) {
+                    if (randomChange > 0) {
+                        salesChangeElement.innerHTML = `<i class="fa fa-arrow-up text-success mr-1"></i>+${randomChange.toFixed(2)}`;
+                    } else {
+                        salesChangeElement.innerHTML = `<i class="fa fa-arrow-down text-danger mr-1"></i>${randomChange.toFixed(2)}`;
+                    }
+                }
+            }
+            
+            // 模拟更新订单数
+            const ordersElement = document.querySelector('.card-value.text-xl.font-bold.text-dark');
+            if (ordersElement && !isNaN(parseInt(ordersElement.textContent))) {
+                const currentOrders = parseInt(ordersElement.textContent);
+                const randomIncrease = Math.floor(Math.random() * 3); // 随机增加0-2个订单
+                const newOrders = currentOrders + randomIncrease;
+                ordersElement.textContent = newOrders;
+                
+                // 更新订单数变化
+                const ordersChangeElement = ordersElement.nextElementSibling;
+                if (ordersChangeElement) {
+                    if (randomIncrease > 0) {
+                        ordersChangeElement.innerHTML = `<i class="fa fa-arrow-up text-success mr-1"></i>+${randomIncrease}`;
+                    }
+                }
+            }
+            
+            // 模拟更新交易状态
+            // 移除重复声明，后续使用已声明的 transactionStatusElement 变量
+            if (transactionStatusElement && transactionStatusElement.textContent.includes('当前交易')) {
+                const statusBadge = transactionStatusElement.nextElementSibling;
+                if (statusBadge) {
+                    // 随机更改交易状态
+                    const statuses = ['进行中', '等待支付', '已完成', '已取消'];
+                    const colors = ['bg-warning', 'bg-info', 'bg-success', 'bg-danger'];
+                    const randomIndex = Math.floor(Math.random() * 4);
+                    
+                    statusBadge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[randomIndex]}`;
+                    statusBadge.textContent = statuses[randomIndex];
+                }
+            }
+            
+            // 更新系统状态面板
+            updateSystemStatus();
+            
+            // 更新商品识别过程
+            updateRecognitionProcess();
+            
+            // 根据交易状态显示或隐藏支付状态区域
+            const paymentStatusContainer = document.getElementById('payment-status-container');
+            const recognitionDetailsContainer = document.querySelector('#payment-status-container + div');
+            const transactionStatusElement = document.querySelector('.card-title.text-dark');
+            const statusBadge = transactionStatusElement && transactionStatusElement.nextElementSibling;
+            
+            if (paymentStatusContainer && recognitionDetailsContainer && statusBadge) {
+                // 如果交易状态为已完成或已取消，则隐藏支付状态和识别商品详情
+                if (statusBadge.textContent === '已完成' || statusBadge.textContent === '已取消') {
+                    paymentStatusContainer.style.display = 'none';
+                    recognitionDetailsContainer.style.display = 'none';
+                } else {
+                    // 否则显示这些区域
+                    paymentStatusContainer.style.display = 'block';
+                    recognitionDetailsContainer.style.display = 'block';
+                }
+            }
+        }
+        
+        // 数字动画函数
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = progress * (end - start) + start;
+                element.textContent = `¥${value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+        
+        // 更新系统状态面板
+        function updateSystemStatus() {
+            const statusIndicators = document.querySelectorAll('.status-indicator');
+            statusIndicators.forEach(indicator => {
+                // 90%的概率保持当前状态，10%的概率随机变化
+                if (Math.random() > 0.9) {
+                    const isCurrentlyGood = indicator.classList.contains('bg-success') || indicator.classList.contains('bg-green-500');
+                    
+                    indicator.className = 'status-indicator w-3 h-3 rounded-full mr-2';
+                    
+                    if (isCurrentlyGood) {
+                        // 可能变为警告或错误
+                        if (Math.random() > 0.5) {
+                            indicator.classList.add('bg-warning');
+                        } else {
+                            indicator.classList.add('bg-danger');
+                        }
+                    } else {
+                        // 可能变为正常
+                        indicator.classList.add('bg-success');
+                    }
+                }
+            });
+        }
+        
+        // 更新商品识别过程
+        function updateRecognitionProcess() {
+            try {
+                // 如果正在进行识别，更新识别结果
+                if (isRecognitionActive) {
+                    fetchRecognitionResults();
+                }
+                
+                // 定期更新摄像头画面（如果摄像头已开启）
+                if (isCameraActive) {
+                    updateCameraFeed();
+                }
+            } catch (error) {
+                console.error('更新识别过程失败:', error);
+            }
+        }
+            // 获取所有识别步骤容器（包含图标和文本的div）
+            const steps = document.querySelectorAll('#recognition-process-container .space-y-4 > div');
+            
+            if (steps.length > 0) {
+                // 随机选择一个步骤作为当前进行中的步骤
+                const currentStepIndex = Math.floor(Math.random() * steps.length);
+                
+                steps.forEach((stepContainer, index) => {
+                    // 获取图标容器
+                    const iconContainer = stepContainer.querySelector('.w-10.h-10.rounded-full');
+                    const iconElement = iconContainer.querySelector('i');
+                    
+                    if (index < currentStepIndex) {
+                        // 前面的步骤标记为完成
+                        iconContainer.className = 'w-10 h-10 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0';
+                        iconElement.className = 'fa fa-check text-success';
+                    } else if (index === currentStepIndex) {
+                        // 当前步骤标记为进行中
+                        iconContainer.className = 'w-10 h-10 rounded-full bg-warning flex items-center justify-center flex-shrink-0';
+                        iconElement.className = 'fa fa-spinner fa-spin text-white';
+                    } else {
+                        // 后面的步骤保持等待状态
+                        iconContainer.className = 'w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0';
+                        iconElement.className = 'fa fa-circle-o text-gray-400';
+                    }
+                });
+            }
+        
+
+        // 重置商品识别过程
+        function resetRecognitionProcess() {
+            // 获取所有识别步骤容器
+            const steps = document.querySelectorAll('#recognition-process-container .space-y-4 > div');
+            
+            if (steps.length > 0) {
+                // 重置所有步骤为等待状态
+                steps.forEach((stepContainer) => {
+                    const iconContainer = stepContainer.querySelector('.w-10.h-10.rounded-full');
+                    const iconElement = iconContainer.querySelector('i');
+                    
+                    iconContainer.className = 'w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0';
+                    iconElement.className = 'fa fa-circle-o text-gray-400';
+                });
+            }
+        }
+        
+        // 初始化侧边栏折叠功能
+        function initSidebarToggle() {
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            
+            if (toggleBtn && sidebar && mainContent) {
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('w-64');
+                    sidebar.classList.toggle('w-20');
+                    
+                    // 显示/隐藏导航文字
+                    const navTexts = document.querySelectorAll('.nav-text');
+                    navTexts.forEach(text => {
+                        text.classList.toggle('hidden');
+                    });
+                    
+                    // 调整主内容区域
+                    mainContent.classList.toggle('ml-64');
+                    mainContent.classList.toggle('ml-20');
+                });
+            }
+        }
+        
+        // 加载统计数据
+        async function loadStatisticsData() {
+            try {
+                const response = await fetch('/api/orders/statistics/dashboard/');
+                if (!response.ok) {
+                    console.error('加载统计数据失败:', response.status);
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                // 更新今日销售额
+                const todaySalesElement = document.getElementById('today-sales');
+                if (todaySalesElement) {
+                    todaySalesElement.textContent = '¥' + data.today.sales.toFixed(2);
+                }
+                
+                // 更新今日销售额增长率
+                const todaySalesGrowthElement = document.getElementById('today-sales-growth');
+                if (todaySalesGrowthElement) {
+                    const growth = data.today.sales_growth;
+                    const icon = growth >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                    const color = growth >= 0 ? 'text-success' : 'text-danger';
+                    todaySalesGrowthElement.innerHTML = `
+                        <i class="fa ${icon} mr-1"></i>
+                        较昨日增长 ${Math.abs(growth)}%
+                    `;
+                    todaySalesGrowthElement.className = `text-xs ${color} mt-2 flex items-center`;
+                }
+                
+                // 更新今日订单数
+                const todayOrdersElement = document.getElementById('today-orders');
+                if (todayOrdersElement) {
+                    todayOrdersElement.textContent = data.today.order_count;
+                }
+                
+                // 更新今日订单数增长率
+                const todayOrdersGrowthElement = document.getElementById('today-orders-growth');
+                if (todayOrdersGrowthElement) {
+                    const growth = data.today.order_growth;
+                    const icon = growth >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                    const color = growth >= 0 ? 'text-success' : 'text-danger';
+                    todayOrdersGrowthElement.innerHTML = `
+                        <i class="fa ${icon} mr-1"></i>
+                        较昨日增长 ${Math.abs(growth)}%
+                    `;
+                    todayOrdersGrowthElement.className = `text-xs ${color} mt-2 flex items-center`;
+                }
+                
+                console.log('统计数据加载成功:', data);
+            } catch (error) {
+                console.error('加载统计数据失败:', error);
+            }
+        }
+        
+        // 加载当前交易状态
+        async function loadCurrentTransaction() {
+            console.log('开始加载当前交易状态...');
+            try {
+                const response = await fetch('/api/orders/statistics/current_transaction/?t=' + Date.now());
+                console.log('API响应状态:', response.status);
+                
+                if (!response.ok) {
+                    console.error('加载当前交易状态失败:', response.status);
+                    return;
+                }
+                
+                const data = await response.json();
+                console.log('API返回数据:', data);
+                
+                // 更新当前交易状态
+                const currentTransactionStatusElement = document.getElementById('current-transaction-status');
+                if (currentTransactionStatusElement) {
+                    currentTransactionStatusElement.textContent = data.status;
+                    console.log('已更新当前交易状态:', data.status);
+                } else {
+                    console.error('找不到current-transaction-status元素');
+                }
+                
+                // 更新当前交易订单号
+                const currentTransactionOrderElement = document.getElementById('current-transaction-order');
+                if (currentTransactionOrderElement) {
+                    if (data.order_no) {
+                        currentTransactionOrderElement.textContent = `订单号: ${data.order_no}`;
+                    } else {
+                        currentTransactionOrderElement.textContent = '暂无交易';
+                    }
+                    console.log('已更新当前交易订单号');
+                } else {
+                    console.error('找不到current-transaction-order元素');
+                }
+                
+                console.log('当前交易状态加载成功:', data);
+            } catch (error) {
+                console.error('加载当前交易状态失败:', error);
+            }
+        }
+        
+        // 页面加载完成后初始化所有事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            setupNavigationListeners();
+            setupTopButtonListeners();
+            setupCameraButtonListeners();
+            setupPaymentButtonListeners();
+            
+            // 初始化侧边栏折叠功能
+            initSidebarToggle();
+            
+            // 加载统计数据
+            loadStatisticsData();
+            
+            // 加载当前交易状态
+            loadCurrentTransaction();
+            
+            // 隐藏商品识别过程容器，直到摄像头开启
+            const recognitionProcessContainer = document.getElementById('recognition-process-container');
+            if (recognitionProcessContainer) {
+                recognitionProcessContainer.style.display = 'none';
+            }
+            
+            // 检查是否需要重定向（登录后返回）
+            checkRedirectAfterLogin();
+        });
+    </script>
+    <!-- 识别系统功能已通过内联JavaScript实现 -->
+</body>
+</html>

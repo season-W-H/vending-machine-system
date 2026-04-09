@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自动售货机系统 API 测试工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; margin: 0 auto; }
+        .container { padding: 20px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px; }
+        h1, h2 { color: #333; }
+        input, textarea, button { margin: 10px 0; padding: 8px; width: 100%; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .token-area { background-color: #f5f5f5; padding: 10px; word-break: break-all; }
+        .endpoint { margin-bottom: 15px; }
+        .response { margin-top: 10px; padding: 10px; background-color: #f9f9f9; border: 1px solid #eee; }
+        pre { white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>自动售货机系统 API 测试工具</h1>
+    <p><a href="/">返回 API 根页面</a> | <a href="/api-test/">刷新测试工具</a></p>
+    
+    <div class="container">
+        <h2>1. 获取 JWT 令牌</h2>
+        <input type="text" id="username" placeholder="用户名">
+        <input type="password" id="password" placeholder="密码">
+        <button onclick="getToken()">获取令牌</button>
+        
+        <div class="token-area">
+            <h3>Access Token:</h3>
+            <div id="accessToken"></div>
+            <h3>Refresh Token:</h3>
+            <div id="refreshToken"></div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>2. 刷新令牌</h2>
+        <input type="text" id="refreshTokenInput" placeholder="输入刷新令牌">
+        <button onclick="refreshToken()">刷新令牌</button>
+    </div>
+    
+    <div class="container">
+        <h2>3. 访问受保护的 API</h2>
+        
+        <div class="endpoint">
+            <h3>用户 API</h3>
+            <button onclick="callAPI('/api/users/users/')">获取用户列表</button>
+            <div class="response">
+                <pre id="usersResponse"></pre>
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <h3>产品 API</h3>
+            <button onclick="callAPI('/api/products/products/')">获取产品列表</button>
+            <div class="response">
+                <pre id="productsResponse"></pre>
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <h3>订单 API</h3>
+            <button onclick="callAPI('/api/orders/orders/')">获取订单列表</button>
+            <div class="response">
+                <pre id="ordersResponse"></pre>
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <h3>支付 API</h3>
+            <button onclick="callAPI('/api/payments/payments/')">获取支付记录</button>
+            <div class="response">
+                <pre id="paymentsResponse"></pre>
+            </div>
+        </div>
+        
+        <div class="endpoint">
+            <h3>库存 API</h3>
+            <button onclick="callAPI('/api/inventory/inventory/')">获取库存信息</button>
+            <div class="response">
+                <pre id="inventoryResponse"></pre>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 存储当前的 access token
+        let currentAccessToken = '';
+        
+        // 获取令牌
+        function getToken() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            fetch('/api/users/token/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP 错误! 状态: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                currentAccessToken = data.access;
+                document.getElementById('accessToken').textContent = data.access;
+                document.getElementById('refreshToken').textContent = data.refresh;
+                document.getElementById('refreshTokenInput').value = data.refresh;
+            })
+            .catch(error => {
+                alert('获取令牌失败: ' + error.message);
+                console.error('获取令牌错误:', error);
+            });
+        }
+        
+        // 刷新令牌
+        function refreshToken() {
+            const refreshToken = document.getElementById('refreshTokenInput').value;
+            
+            fetch('/api/users/token/refresh/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ refresh: refreshToken })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP 错误! 状态: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                currentAccessToken = data.access;
+                document.getElementById('accessToken').textContent = data.access;
+            })
+            .catch(error => {
+                alert('刷新令牌失败: ' + error.message);
+                console.error('刷新令牌错误:', error);
+            });
+        }
+        
+        // 调用API
+        function callAPI(endpoint) {
+            if (!currentAccessToken) {
+                alert('请先获取令牌!');
+                return;
+            }
+            
+            // 清空之前的响应
+            const responseElementId = endpoint.split('/').filter(Boolean)[1] + 'Response';
+            document.getElementById(responseElementId).textContent = '加载中...';
+            
+            fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${currentAccessToken}`,
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP 错误! 状态: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById(responseElementId).textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                document.getElementById(responseElementId).textContent = '请求失败: ' + error.message;
+                console.error('API 请求错误:', error);
+            });
+        }
+    </script>
+</body>
+</html>
